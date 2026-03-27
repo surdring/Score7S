@@ -1,0 +1,9 @@
+{
+  "name": "get-inspection-dates",
+  "version": "1.0.0",
+  "description": "获取检查日期列表（最近N期）",
+  "main": "index.js",
+  "dependencies": {
+    "wx-server-sdk": "~2.6.3"
+  }
+}

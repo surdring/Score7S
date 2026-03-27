@@ -1,0 +1,135 @@
+<!--pages/history/history.wxml-->
+<view class="container">
+  <!-- 头部 -->
+  <view class="header">
+    <view class="header-left">
+      <text class="header-title">历史数据查询</text>
+      <text class="header-subtitle">查看过往打分记录</text>
+    </view>
+    <view class="header-right">
+      <text class="export-hint">导出当前筛选结果</text>
+      <button 
+        class="export-btn {{filteredInspections.length === 0 || exporting ? 'disabled' : ''}}"
+        bindtap="exportData"
+        disabled="{{filteredInspections.length === 0 || exporting}}"
+      >
+        <text class="export-icon">📥</text>
+        <text>导出</text>
+      </button>
+    </view>
+  </view>
+
+  <!-- 筛选区域 -->
+  <view class="filter-section">
+    <view class="search-box">
+      <text class="search-icon">🔍</text>
+      <input 
+        class="search-input"
+        placeholder="搜索部门、检查员..."
+        value="{{searchKeyword}}"
+        bindinput="onSearchInput"
+      />
+    </view>
+    <view class="filter-row">
+      <view class="date-picker">
+        <text class="picker-icon">📅</text>
+        <picker mode="date" value="{{selectedDate}}" bindchange="onDateChange">
+          <view class="picker-value {{selectedDate ? '' : 'placeholder'}}">{{selectedDate || '选择日期'}}</view>
+        </picker>
+      </view>
+      <view 
+        wx:if="{{searchKeyword || selectedDate}}"
+        class="clear-filter-btn"
+        bindtap="clearFilter"
+      >
+        <text>清除</text>
+      </view>
+    </view>
+  </view>
+
+  <!-- 加载状态 -->
+  <view wx:if="{{loading}}" class="loading">
+    <view class="loading-spinner"></view>
+  </view>
+
+  <!-- 无数据 -->
+  <view wx:elif="{{filteredInspections.length === 0}}" class="empty-state">
+    <text class="empty-icon">📭</text>
+    <text class="empty-text">没有找到相关记录</text>
+  </view>
+
+  <!-- 列表 -->
+  <view wx:else class="list">
+    <view 
+      wx:for="{{filteredInspections}}" 
+      wx:key="_id" 
+      class="list-item"
+      bindtap="viewDetail"
+      data-id="{{item._id}}"
+    >
+      <view class="item-icon">
+        <text>🏢</text>
+      </view>
+      <view class="item-content">
+        <text class="item-dept">{{item.department}}</text>
+        <text class="item-room">{{item.room}}</text>
+        <view class="item-meta">
+          <text>{{item.date}}</text>
+          <text>•</text>
+          <text>检查员: {{item.checkerName || '匿名'}}</text>
+        </view>
+      </view>
+      <view class="item-right">
+        <text class="item-score">{{item.totalScore}}分</text>
+        <text class="item-arrow">›</text>
+      </view>
+    </view>
+  </view>
+</view>
+
+<!-- 详情弹窗 -->
+<view wx:if="{{showDetail}}" class="modal-mask" bindtap="closeDetail">
+  <view class="modal-content" catchtap="">
+    <view class="modal-header">
+      <view class="modal-title">
+        <text class="modal-dept">{{selectedInspection.department}}</text>
+        <text class="modal-subtitle">{{selectedInspection.room}} - {{selectedInspection.date}}</text>
+      </view>
+      <view class="modal-close" bindtap="closeDetail">✕</view>
+    </view>
+
+    <view class="modal-score">
+      <text class="score-label">总分</text>
+      <text class="score-value">{{selectedInspection.totalScore}}分</text>
+    </view>
+
+    <scroll-view scroll-y class="modal-body">
+      <text class="detail-title">打分明细</text>
+      <view class="detail-list">
+        <view wx:for="{{selectedInspection.details}}" wx:key="item" class="detail-card">
+          <view class="detail-header">
+            <text class="detail-item">{{item.item}}</text>
+            <text class="detail-score {{item.score <= 4 ? 'danger' : 'success'}}">{{item.score}}分</text>
+          </view>
+          <view wx:if="{{item.remark}}" class="detail-remark">
+            <text>{{item.remark}}</text>
+          </view>
+          <view wx:if="{{item.images.length > 0}}" class="detail-images">
+            <image 
+              wx:for="{{item.images}}" 
+              wx:for-item="img" 
+              wx:for-index="idx"
+              wx:key="idx"
+              src="{{img}}" 
+              class="detail-image"
+              mode="aspectFill"
+              bindtap="previewImage"
+              data-url="{{img}}"
+              data-urls="{{item.images}}"
+            />
+          </view>
+        </view>
+      </view>
+    </scroll-view>
+  </view>
+</view>

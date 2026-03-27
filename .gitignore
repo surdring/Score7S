@@ -1,0 +1,52 @@
+# 依赖目录
+node_modules/
+miniprogram/node_modules/
+7s联查评分系统/node_modules/
+
+# 日志文件
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# 运行时数据
+pids
+*.pid
+*.seed
+*.pid.lock
+
+# 环境变量文件
+.env
+.env.local
+.env.*.local
+miniprogram/.env
+7s联查评分系统/.env
+
+# IDE 配置
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# 编辑器历史
+.specstory/
+
+# 操作系统文件
+.DS_Store
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# 微信小程序
+miniprogram/miniprogram_npm/
+
+# 构建输出
+dist/
+build/
+
+# 临时文件
+*.tmp
+*.temp
+.cache/

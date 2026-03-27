@@ -1,0 +1,92 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // ===============================================================
+    // Assumed Data Model
+    // ===============================================================
+    //
+    // Collection: departments
+    // Document ID: auto-generated
+    // Fields:
+    //   - name: string (required) - Department name
+    //   - rooms: list of strings (required) - Room names
+    //
+    // Collection: inspections
+    // Document ID: auto-generated
+    // Fields:
+    //   - date: string (required) - YYYY-MM-DD
+    //   - checkerId: string (required) - UID of the checker
+    //   - checkerName: string (required) - Name of the checker
+    //   - department: string (required) - Department name
+    //   - room: string (required) - Room name
+    //   - totalScore: number (required) - Total score (0-70)
+    //   - details: list of objects (required) - Details of each item
+    //   - createdAt: timestamp (required) - Creation time
+    //
+    // ===============================================================
+
+    // Helper Functions
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    function hasRequiredFields(fields) {
+      return request.resource.data.keys().hasAll(fields);
+    }
+
+    function hasOnlyAllowedFields(fields) {
+      return request.resource.data.keys().hasOnly(fields);
+    }
+
+    function isValidDepartment() {
+      return hasRequiredFields(['name', 'rooms']) &&
+             hasOnlyAllowedFields(['name', 'rooms']) &&
+             request.resource.data.name is string &&
+             request.resource.data.name.size() > 0 &&
+             request.resource.data.name.size() < 100 &&
+             request.resource.data.rooms is list &&
+             request.resource.data.rooms.size() <= 100;
+    }
+
+    function isValidInspection() {
+      return hasRequiredFields(['date', 'checkerId', 'checkerName', 'department', 'room', 'totalScore', 'details', 'createdAt']) &&
+             hasOnlyAllowedFields(['date', 'checkerId', 'checkerName', 'department', 'room', 'totalScore', 'details', 'createdAt']) &&
+             request.resource.data.date is string &&
+             request.resource.data.date.size() == 10 &&
+             request.resource.data.checkerId == request.auth.uid &&
+             request.resource.data.checkerName is string &&
+             request.resource.data.checkerName.size() > 0 &&
+             request.resource.data.checkerName.size() < 100 &&
+             request.resource.data.department is string &&
+             request.resource.data.department.size() > 0 &&
+             request.resource.data.department.size() < 100 &&
+             request.resource.data.room is string &&
+             request.resource.data.room.size() > 0 &&
+             request.resource.data.room.size() < 100 &&
+             request.resource.data.totalScore is number &&
+             request.resource.data.totalScore >= 0 &&
+             request.resource.data.totalScore <= 70 &&
+             request.resource.data.details is list &&
+             request.resource.data.details.size() == 7 &&
+             request.resource.data.createdAt is timestamp;
+    }
+
+    match /departments/{deptId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated() && isValidDepartment();
+      allow update: if isAuthenticated() && isValidDepartment();
+      allow delete: if false; // Only allow soft deletes or no deletes for now
+    }
+
+    match /inspections/{inspectionId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated() && isValidInspection();
+      allow update: if false; // Inspections are immutable once submitted
+      allow delete: if false;
+    }
+  }
+}

@@ -1,0 +1,101 @@
+<!--pages/analytics/analytics.wxml-->
+<view class="container">
+  <!-- 头部 -->
+  <view class="header">
+    <text class="header-title">数据分析</text>
+    <text class="header-subtitle">多维度查看7S联查情况</text>
+  </view>
+
+  <!-- 加载状态 -->
+  <view wx:if="{{loading}}" class="loading">
+    <view class="loading-spinner"></view>
+  </view>
+
+  <!-- 无数据 -->
+  <view wx:elif="{{!hasData}}" class="empty-state">
+    <text class="empty-icon">📊</text>
+    <text class="empty-text">暂无足够的数据生成图表</text>
+    <text class="empty-hint">请先完成一些评分记录</text>
+  </view>
+
+  <!-- 有数据 -->
+  <view wx:else class="charts-container">
+    <!-- 整体趋势 -->
+    <view class="chart-card">
+      <view class="chart-header">
+        <text class="chart-icon">📈</text>
+        <text class="chart-title">整体趋势（平均分）</text>
+      </view>
+      <view class="chart-body">
+        <!-- 简化的趋势展示（小程序建议使用 ECharts 组件，这里先用列表展示） -->
+        <view class="trend-list">
+          <view wx:for="{{trendData}}" wx:key="date" class="trend-item">
+            <text class="trend-date">{{item.date}}</text>
+            <view class="trend-bar-container">
+              <view class="trend-bar" style="width: {{item.averageScore / 70 * 100}}%"></view>
+            </view>
+            <text class="trend-score">{{item.averageScore}}分</text>
+          </view>
+        </view>
+      </view>
+    </view>
+
+    <!-- 部门对比 -->
+    <view class="chart-card">
+      <view class="chart-header">
+        <text class="chart-icon">🏢</text>
+        <text class="chart-title">各部门平均分对比</text>
+      </view>
+      <view class="chart-body">
+        <view class="dept-list">
+          <view wx:for="{{deptData}}" wx:key="department" class="dept-item">
+            <text class="dept-name">{{item.department}}</text>
+            <view class="dept-bar-container">
+              <view class="dept-bar" style="width: {{item.averageScore / 70 * 100}}%"></view>
+            </view>
+            <text class="dept-score">{{item.averageScore}}分</text>
+          </view>
+        </view>
+      </view>
+    </view>
+
+    <!-- 扣分重灾区 -->
+    <view class="chart-card">
+      <view class="chart-header">
+        <text class="chart-icon">⚠️</text>
+        <text class="chart-title">扣分重灾区（单项平均分）</text>
+      </view>
+      <view class="chart-body">
+        <view class="issue-list">
+          <view 
+            wx:for="{{issueData}}" 
+            wx:key="item" 
+            class="issue-item"
+          >
+            <text class="issue-name">{{item.item}}</text>
+            <view class="issue-bar-container">
+              <view class="issue-bar {{item.averageScore <= 6 ? 'danger' : ''}}" style="width: {{item.averageScore / 10 * 100}}%"></view>
+            </view>
+            <text class="issue-score">{{item.averageScore}}分</text>
+          </view>
+        </view>
+      </view>
+    </view>
+
+    <!-- 快速统计 -->
+    <view class="stats-card">
+      <view class="stat-item">
+        <text class="stat-value">{{trendData.length}}</text>
+        <text class="stat-label">检查天数</text>
+      </view>
+      <view class="stat-item">
+        <text class="stat-value">{{deptData.length}}</text>
+        <text class="stat-label">参与部门</text>
+      </view>
+      <view class="stat-item">
+        <text class="stat-value">{{issueData.length > 0 ? issueData[0].item : '-'}}</text>
+        <text class="stat-label">最弱项</text>
+      </view>
+    </view>
+  </view>
+</view>

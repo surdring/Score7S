@@ -1,0 +1,19 @@
+{
+  "name": "7s-inspection-miniprogram",
+  "version": "1.0.0",
+  "description": "7S联查评分小程序",
+  "scripts": {
+    "dev": "echo '请使用微信开发者工具进行开发'",
+    "build": "echo '请使用微信开发者工具进行构建'"
+  },
+  "devDependencies": {
+    "miniprogram-api-typings": "^3.12.3"
+  },
+  "keywords": [
+    "miniprogram",
+    "7s",
+    "inspection"
+  ],
+  "author": "",
+  "license": "MIT"
+}

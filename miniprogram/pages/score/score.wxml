@@ -1,0 +1,176 @@
+<!--pages/score/score.wxml-->
+<view wx:if="{{!submitted}}" class="page">
+  <!-- 头部信息 -->
+  <view class="header">
+    <text class="header-title">现场检查打分</text>
+    
+    <view class="form-row">
+      <view class="form-item">
+        <text class="form-label">检查日期</text>
+        <picker mode="date" value="{{date}}" bindchange="onDateChange">
+          <view class="picker-value">{{date}}</view>
+        </picker>
+      </view>
+    </view>
+
+    <view class="form-row">
+      <view class="form-item">
+        <text class="form-label">部门</text>
+        <picker 
+          mode="selector" 
+          range="{{departments}}" 
+          range-key="name" 
+          value="{{deptIndex}}"
+          bindchange="onDeptChange"
+        >
+          <view class="picker-value">{{selectedDept}}</view>
+        </picker>
+      </view>
+    </view>
+
+    <view class="form-row">
+      <view class="form-item">
+        <text class="form-label">办公室</text>
+        <picker 
+          mode="selector" 
+          range="{{departments[deptIndex].rooms}}" 
+          value="{{roomIndex}}"
+          bindchange="onRoomChange"
+        >
+          <view class="picker-value">{{selectedRoom}}</view>
+        </picker>
+      </view>
+    </view>
+  </view>
+
+  <!-- 加载状态 -->
+  <view wx:if="{{loading}}" class="loading">
+    <view class="loading-spinner"></view>
+  </view>
+
+  <!-- 评分表单 -->
+  <view wx:else class="score-list">
+    <view 
+      wx:for="{{scoringItems}}" 
+      wx:key="*this" 
+      class="score-card"
+      id="item-{{item}}"
+    >
+      <view class="score-header">
+        <view class="score-number">{{index + 1}}</view>
+        <view class="score-title-wrap">
+          <text class="score-title">{{item}}</text>
+          <text class="score-standard">{{scoringStandards[item]}}</text>
+        </view>
+      </view>
+
+      <!-- 分数按钮 -->
+      <view class="score-buttons">
+        <view 
+          wx:for="{{scoreOptions}}" 
+          wx:for-item="score" 
+          wx:key="*this"
+          class="score-btn {{scores[item].score === score ? 'active' : ''}}"
+          bindtap="selectScore"
+          data-item="{{item}}"
+          data-score="{{score}}"
+        >
+          {{score}}分
+        </view>
+      </view>
+
+      <!-- 备注输入 -->
+      <textarea 
+        class="remark-input {{scores[item].score <= 4 && !scores[item].remark && scores[item].images.length === 0 ? 'required' : ''}}"
+        placeholder="{{scores[item].score <= 4 ? '请填写扣分原因（必填）...' : '备注说明（选填）...'}}"
+        value="{{scores[item].remark}}"
+        bindinput="onRemarkInput"
+        data-item="{{item}}"
+      />
+
+      <!-- 图片上传 -->
+      <view class="image-upload">
+        <view class="image-list">
+          <view 
+            wx:for="{{scores[item].images}}" 
+            wx:for-item="img" 
+            wx:for-index="idx"
+            wx:key="idx"
+            class="image-item"
+          >
+            <image 
+              src="{{img}}" 
+              mode="aspectFill" 
+              class="preview-image"
+              bindtap="previewImage"
+              data-url="{{img}}"
+              data-item="{{item}}"
+            />
+            <view 
+              class="delete-btn"
+              bindtap="deleteImage"
+              data-item="{{item}}"
+              data-index="{{idx}}"
+            >✕</view>
+          </view>
+
+          <view 
+            wx:if="{{scores[item].images.length < 3}}"
+            class="upload-btn"
+            bindtap="chooseImage"
+            data-item="{{item}}"
+          >
+            <text class="upload-icon">📷</text>
+            <text class="upload-text">拍照/相册({{scores[item].images.length}}/3)</text>
+          </view>
+        </view>
+      </view>
+
+      <!-- 低分提示 -->
+      <view 
+        wx:if="{{scores[item].score <= 4 && scores[item].images.length === 0 && !scores[item].remark}}"
+        class="warning-tip"
+      >
+        <text class="warning-icon">⚠</text>
+        <text>评分≤4分，必须上传照片或填写备注</text>
+      </view>
+    </view>
+  </view>
+
+  <!-- 底部提交栏 -->
+  <view class="submit-bar">
+    <view class="total-score">
+      <text class="total-label">当前总计</text>
+      <text class="total-value">{{totalScore}}</text>
+      <text class="total-unit">分</text>
+    </view>
+    <button 
+      class="submit-btn {{submitting ? 'disabled' : ''}}"
+      bindtap="submit"
+      disabled="{{submitting}}"
+    >
+      <text wx:if="{{submitting}}">提交中...</text>
+      <text wx:else>提交评分</text>
+    </button>
+  </view>
+</view>
+
+<!-- 提交成功页 -->
+<view wx:if="{{submitted}}" class="success-page">
+  <view class="success-card">
+    <view class="success-icon">✓</view>
+    <text class="success-title">提交成功</text>
+    <text class="success-info">{{submittedData.department}} - {{submittedData.room}}</text>
+    <view class="success-score">
+      <text class="score-label">总分:</text>
+      <text class="score-value">{{submittedData.totalScore}}</text>
+      <text class="score-unit">分</text>
+    </view>
+
+    <view class="success-actions">
+      <button class="action-btn primary" bindtap="viewDetail">查看详情</button>
+      <button class="action-btn secondary" bindtap="goHome">返回首页</button>
+      <button class="action-btn text" bindtap="continueScore">继续打分</button>
+    </view>
+  </view>
+</view>

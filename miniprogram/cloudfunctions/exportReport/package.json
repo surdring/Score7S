@@ -1,0 +1,10 @@
+{
+  "name": "export-report",
+  "version": "1.0.0",
+  "description": "导出评分报告（CSV和Excel）",
+  "main": "index.js",
+  "dependencies": {
+    "wx-server-sdk": "~2.6.3",
+    "exceljs": "^4.4.0"
+  }
+}

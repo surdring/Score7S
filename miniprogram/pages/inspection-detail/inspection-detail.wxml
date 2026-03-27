@@ -1,0 +1,81 @@
+<!--pages/inspection-detail/inspection-detail.wxml-->
+<view class="container">
+  <view wx:if="{{loading}}" class="loading">
+    <view class="loading-spinner"></view>
+  </view>
+
+  <view wx:elif="{{!inspection}}" class="empty-state">
+    <text class="empty-icon">❌</text>
+    <text class="empty-text">数据加载失败</text>
+  </view>
+
+  <view wx:else class="detail-content">
+    <!-- 头部信息 -->
+    <view class="header-card">
+      <view class="header-row">
+        <text class="dept-name">{{inspection.department}}</text>
+        <text class="room-name">{{inspection.room}}</text>
+      </view>
+      <view class="header-meta">
+        <view class="meta-item">
+          <text class="meta-icon">📅</text>
+          <text>{{inspection.date}}</text>
+        </view>
+        <view class="meta-item">
+          <text class="meta-icon">👤</text>
+          <text>检查员: {{inspection.checkerName || '匿名'}}</text>
+        </view>
+      </view>
+      <view class="total-score-box">
+        <text class="score-label">总分</text>
+        <text class="score-value">{{inspection.totalScore}}</text>
+        <text class="score-unit">分</text>
+      </view>
+    </view>
+
+    <!-- 评分明细 -->
+    <view class="section">
+      <text class="section-title">评分明细</text>
+      <view class="detail-list">
+        <view wx:for="{{inspection.details}}" wx:key="item" class="detail-card">
+          <view class="detail-header">
+            <view class="detail-left">
+              <text class="detail-number">{{index + 1}}</text>
+              <text class="detail-item">{{item.item}}</text>
+            </view>
+            <text class="detail-score {{item.score <= 4 ? 'danger' : 'success'}}">{{item.score}}分</text>
+          </view>
+          
+          <view wx:if="{{item.remark}}" class="detail-remark">
+            <text class="remark-label">备注:</text>
+            <text>{{item.remark}}</text>
+          </view>
+          
+          <view wx:if="{{item.images.length > 0}}" class="detail-images">
+            <text class="images-label">照片凭证:</text>
+            <view class="images-grid">
+              <image 
+                wx:for="{{item.images}}" 
+                wx:for-item="img" 
+                wx:for-index="idx"
+                wx:key="idx"
+                src="{{img}}" 
+                class="detail-image"
+                mode="aspectFill"
+                bindtap="previewImage"
+                data-url="{{img}}"
+                data-urls="{{item.images}}"
+              />
+            </view>
+          </view>
+        </view>
+      </view>
+    </view>
+
+    <!-- 底部操作 -->
+    <view class="actions">
+      <button class="action-btn secondary" bindtap="goBack">返回</button>
+      <button class="action-btn primary" bindtap="goHome">返回首页</button>
+    </view>
+  </view>
+</view>

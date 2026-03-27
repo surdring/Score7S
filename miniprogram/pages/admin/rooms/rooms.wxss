@@ -1,0 +1,199 @@
+/* 办公室管理页面样式 */
+.container {
+  padding: 20rpx;
+  min-height: 100vh;
+  background-color: #f5f5f5;
+}
+
+.dept-header {
+  background-color: white;
+  padding: 30rpx;
+  margin-bottom: 20rpx;
+  border-radius: 12rpx;
+}
+
+.dept-title {
+  font-size: 36rpx;
+  font-weight: 600;
+  color: #1F2937;
+  display: block;
+  margin-bottom: 8rpx;
+}
+
+.room-count {
+  font-size: 24rpx;
+  color: #6B7280;
+}
+
+.toolbar {
+  margin-bottom: 20rpx;
+}
+
+.btn-primary {
+  width: 100%;
+  background-color: #3B82F6;
+  color: white;
+  font-size: 28rpx;
+  border-radius: 8rpx;
+}
+
+.room-list {
+  background-color: white;
+  border-radius: 12rpx;
+  overflow: hidden;
+}
+
+.room-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 30rpx;
+  border-bottom: 1rpx solid #E5E7EB;
+}
+
+.room-item:last-child {
+  border-bottom: none;
+}
+
+.room-info {
+  display: flex;
+  flex-direction: column;
+  gap: 8rpx;
+  flex: 1;
+}
+
+.room-name {
+  font-size: 32rpx;
+  font-weight: 500;
+  color: #1F2937;
+}
+
+.room-manager {
+  font-size: 24rpx;
+  color: #059669;
+}
+
+.room-order {
+  font-size: 24rpx;
+  color: #6B7280;
+}
+
+.room-actions {
+  display: flex;
+  gap: 20rpx;
+}
+
+.action-btn {
+  font-size: 28rpx;
+  color: #3B82F6;
+  padding: 10rpx 20rpx;
+}
+
+.action-btn.danger {
+  color: #EF4444;
+}
+
+.empty-state, .loading-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 100rpx 0;
+}
+
+.empty-text {
+  font-size: 32rpx;
+  color: #9CA3AF;
+  margin-bottom: 16rpx;
+}
+
+.empty-hint {
+  font-size: 24rpx;
+  color: #9CA3AF;
+}
+
+/* 弹窗样式 */
+.modal-mask {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  z-index: 100;
+}
+
+.modal-dialog {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 600rpx;
+  background-color: white;
+  border-radius: 16rpx;
+  z-index: 101;
+  overflow: hidden;
+}
+
+.modal-title {
+  padding: 30rpx;
+  text-align: center;
+  font-size: 32rpx;
+  font-weight: 500;
+  border-bottom: 1rpx solid #E5E7EB;
+}
+
+.modal-body {
+  padding: 30rpx;
+}
+
+.form-item {
+  margin-bottom: 24rpx;
+}
+
+.form-item:last-child {
+  margin-bottom: 0;
+}
+
+.form-label {
+  display: block;
+  font-size: 28rpx;
+  color: #4B5563;
+  margin-bottom: 12rpx;
+}
+
+.form-input {
+  width: 100%;
+  height: 80rpx;
+  padding: 0 20rpx;
+  font-size: 28rpx;
+  border: 1rpx solid #D1D5DB;
+  border-radius: 8rpx;
+  box-sizing: border-box;
+}
+
+.modal-footer {
+  display: flex;
+  border-top: 1rpx solid #E5E7EB;
+}
+
+.btn-cancel, .btn-confirm {
+  flex: 1;
+  height: 100rpx;
+  line-height: 100rpx;
+  text-align: center;
+  font-size: 32rpx;
+  border-radius: 0;
+  border: none;
+}
+
+.btn-cancel {
+  color: #6B7280;
+  background-color: white;
+  border-right: 1rpx solid #E5E7EB;
+}
+
+.btn-confirm {
+  color: #3B82F6;
+  background-color: white;
+}

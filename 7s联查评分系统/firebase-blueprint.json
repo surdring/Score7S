@@ -1,0 +1,109 @@
+{
+  "entities": {
+    "Department": {
+      "title": "Department",
+      "description": "A department and its associated rooms",
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "The name of the department"
+        },
+        "rooms": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "List of room names in this department"
+        }
+      },
+      "required": ["name", "rooms"]
+    },
+    "InspectionDetail": {
+      "title": "Inspection Detail",
+      "description": "Details of a single scoring item",
+      "type": "object",
+      "properties": {
+        "item": {
+          "type": "string",
+          "description": "The name of the scoring item (e.g., Desktop, Floor)"
+        },
+        "score": {
+          "type": "number",
+          "description": "The score given (10, 8, 4, 2)"
+        },
+        "images": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "List of image URLs"
+        },
+        "remark": {
+          "type": "string",
+          "description": "Remarks or reasons for deduction"
+        }
+      },
+      "required": ["item", "score", "images", "remark"]
+    },
+    "Inspection": {
+      "title": "Inspection Record",
+      "description": "A complete 7S inspection record",
+      "type": "object",
+      "properties": {
+        "date": {
+          "type": "string",
+          "format": "date",
+          "description": "The date of the inspection (YYYY-MM-DD)"
+        },
+        "checkerId": {
+          "type": "string",
+          "description": "The UID of the user who performed the inspection"
+        },
+        "checkerName": {
+          "type": "string",
+          "description": "The display name of the checker"
+        },
+        "department": {
+          "type": "string",
+          "description": "The name of the inspected department"
+        },
+        "room": {
+          "type": "string",
+          "description": "The name of the inspected room"
+        },
+        "totalScore": {
+          "type": "number",
+          "description": "The total score of the inspection"
+        },
+        "details": {
+          "type": "array",
+          "items": {
+            "$ref": "#/entities/InspectionDetail"
+          },
+          "description": "The detailed scores for each item"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Timestamp of record creation"
+        }
+      },
+      "required": ["date", "checkerId", "checkerName", "department", "room", "totalScore", "details", "createdAt"]
+    }
+  },
+  "firestore": {
+    "departments": {
+      "schema": {
+        "$ref": "#/entities/Department"
+      },
+      "description": "Stores the list of departments and their rooms"
+    },
+    "inspections": {
+      "schema": {
+        "$ref": "#/entities/Inspection"
+      },
+      "description": "Stores the 7S inspection records"
+    }
+  }
+}

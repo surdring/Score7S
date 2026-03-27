@@ -1,0 +1,54 @@
+{
+  "pages": [
+    "pages/home/home",
+    "pages/score/score",
+    "pages/analytics/analytics",
+    "pages/history/history",
+    "pages/score-success/score-success",
+    "pages/inspection-detail/inspection-detail",
+    "pages/admin/departments/departments",
+    "pages/admin/rooms/rooms"
+  ],
+  "window": {
+    "backgroundTextStyle": "light",
+    "navigationBarBackgroundColor": "#3B82F6",
+    "navigationBarTitleText": "7S联查评分",
+    "navigationBarTextStyle": "white"
+  },
+  "tabBar": {
+    "color": "#9CA3AF",
+    "selectedColor": "#3B82F6",
+    "backgroundColor": "#FFFFFF",
+    "borderStyle": "black",
+    "list": [
+      {
+        "pagePath": "pages/home/home",
+        "text": "首页",
+        "iconPath": "assets/icons/home.png",
+        "selectedIconPath": "assets/icons/home-active.png"
+      },
+      {
+        "pagePath": "pages/score/score",
+        "text": "评分",
+        "iconPath": "assets/icons/score.png",
+        "selectedIconPath": "assets/icons/score-active.png"
+      },
+      {
+        "pagePath": "pages/analytics/analytics",
+        "text": "分析",
+        "iconPath": "assets/icons/analytics.png",
+        "selectedIconPath": "assets/icons/analytics-active.png"
+      },
+      {
+        "pagePath": "pages/history/history",
+        "text": "历史",
+        "iconPath": "assets/icons/history.png",
+        "selectedIconPath": "assets/icons/history-active.png"
+      }
+    ]
+  },
+  "cloud": true,
+  "style": "v2",
+  "sitemapLocation": "sitemap.json",
+  "lazyCodeLoading": "requiredComponents"
+}

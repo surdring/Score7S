@@ -1,0 +1,53 @@
+<!-- 部门管理页面 -->
+<view class="container">
+  <!-- 顶部操作栏 -->
+  <view class="toolbar">
+    <button class="btn-primary" bindtap="showAddDialog">+ 添加部门</button>
+    <button class="btn-secondary" bindtap="initFromLocal">从本地初始化</button>
+  </view>
+
+  <!-- 部门列表 -->
+  <view class="dept-list" wx:if="{{departments.length > 0}}">
+    <view class="dept-item" wx:for="{{departments}}" wx:key="_id">
+      <view class="dept-info" bindtap="viewRooms" data-id="{{item._id}}">
+        <text class="dept-name">{{item.name}}</text>
+        <text class="dept-room-count">{{item.roomCount || 0}} 个办公室 ›</text>
+      </view>
+      <view class="dept-actions">
+        <text class="action-btn" catchtap="showEditDialog" data-id="{{item._id}}" data-name="{{item.name}}" data-order="{{item.order}}">编辑</text>
+        <text class="action-btn danger" catchtap="deleteDept" data-id="{{item._id}}" data-name="{{item.name}}">删除</text>
+      </view>
+    </view>
+  </view>
+
+  <!-- 空状态 -->
+  <view class="empty-state" wx:if="{{departments.length === 0 && !loading}}">
+    <text class="empty-text">暂无部门数据</text>
+    <text class="empty-hint">点击"从本地初始化"导入默认部门</text>
+  </view>
+
+  <!-- 加载状态 -->
+  <view class="loading-state" wx:if="{{loading}}">
+    <text>加载中...</text>
+  </view>
+
+  <!-- 添加/编辑弹窗 -->
+  <view class="modal-mask" wx:if="{{showModal}}" bindtap="closeModal"></view>
+  <view class="modal-dialog" wx:if="{{showModal}}">
+    <view class="modal-title">{{isEdit ? '编辑部门' : '添加部门'}}</view>
+    <view class="modal-body">
+      <view class="form-item">
+        <text class="form-label">部门名称</text>
+        <input class="form-input" placeholder="请输入部门名称" value="{{formName}}" bindinput="onNameInput" />
+      </view>
+      <view class="form-item">
+        <text class="form-label">排序序号</text>
+        <input class="form-input" type="number" placeholder="请输入排序序号" value="{{formOrder}}" bindinput="onOrderInput" />
+      </view>
+    </view>
+    <view class="modal-footer">
+      <button class="btn-cancel" bindtap="closeModal">取消</button>
+      <button class="btn-confirm" bindtap="submitForm">确定</button>
+    </view>
+  </view>
+</view>

@@ -1,0 +1,63 @@
+<!-- 办公室管理页面 -->
+<view class="container">
+  <!-- 部门标题 -->
+  <view class="dept-header">
+    <text class="dept-title">{{departmentName}}</text>
+    <text class="room-count">共 {{rooms.length}} 个办公室</text>
+  </view>
+
+  <!-- 顶部操作栏 -->
+  <view class="toolbar">
+    <button class="btn-primary" bindtap="showAddDialog">+ 添加办公室</button>
+  </view>
+
+  <!-- 办公室列表 -->
+  <view class="room-list" wx:if="{{rooms.length > 0}}">
+    <view class="room-item" wx:for="{{rooms}}" wx:key="_id">
+      <view class="room-info">
+        <text class="room-name">{{item.name}}</text>
+        <text class="room-manager">负责人: {{item.manager || '未设置'}}</text>
+        <text class="room-order">排序: {{item.order}}</text>
+      </view>
+      <view class="room-actions">
+        <text class="action-btn" catchtap="showEditDialog" data-id="{{item._id}}" data-name="{{item.name}}" data-manager="{{item.manager}}" data-order="{{item.order}}">编辑</text>
+        <text class="action-btn danger" catchtap="deleteRoom" data-id="{{item._id}}" data-name="{{item.name}}">删除</text>
+      </view>
+    </view>
+  </view>
+
+  <!-- 空状态 -->
+  <view class="empty-state" wx:if="{{rooms.length === 0 && !loading}}">
+    <text class="empty-text">暂无办公室数据</text>
+    <text class="empty-hint">点击上方按钮添加办公室</text>
+  </view>
+
+  <!-- 加载状态 -->
+  <view class="loading-state" wx:if="{{loading}}">
+    <text>加载中...</text>
+  </view>
+
+  <!-- 添加/编辑弹窗 -->
+  <view class="modal-mask" wx:if="{{showModal}}" bindtap="closeModal"></view>
+  <view class="modal-dialog" wx:if="{{showModal}}">
+    <view class="modal-title">{{isEdit ? '编辑办公室' : '添加办公室'}}</view>
+    <view class="modal-body">
+      <view class="form-item">
+        <text class="form-label">办公室名称</text>
+        <input class="form-input" placeholder="请输入办公室名称" value="{{formName}}" bindinput="onNameInput" />
+      </view>
+      <view class="form-item">
+        <text class="form-label">负责人</text>
+        <input class="form-input" placeholder="请输入负责人姓名（可选）" value="{{formManager}}" bindinput="onManagerInput" />
+      </view>
+      <view class="form-item">
+        <text class="form-label">排序序号</text>
+        <input class="form-input" type="number" placeholder="请输入排序序号" value="{{formOrder}}" bindinput="onOrderInput" />
+      </view>
+    </view>
+    <view class="modal-footer">
+      <button class="btn-cancel" bindtap="closeModal">取消</button>
+      <button class="btn-confirm" bindtap="submitForm">确定</button>
+    </view>
+  </view>
+</view>

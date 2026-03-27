@@ -1,0 +1,202 @@
+<!--pages/home/home.wxml-->
+<view class="container">
+  <!-- 头部标题 -->
+  <view class="header">
+    <view class="header-icon">
+      <text class="icon-check">✓</text>
+    </view>
+    <view class="header-content">
+      <view class="header-title-row">
+        <text class="header-title">7S联查看板</text>
+        <text class="admin-link" bindtap="goToAdmin">⚙️ 管理</text>
+      </view>
+      <!-- 日期选择器 -->
+      <view class="date-selector">
+        <picker mode="date" value="{{selectedDate}}" bindchange="onDateChange">
+          <view class="date-picker-btn">
+            <text class="date-icon">📅</text>
+            <text class="date-text">{{selectedDate || '选择日期'}}</text>
+            <text class="date-arrow">▼</text>
+          </view>
+        </picker>
+      </view>
+    </view>
+  </view>
+
+  <!-- 加载状态 -->
+  <view wx:if="{{loading}}" class="loading">
+    <view class="loading-spinner"></view>
+  </view>
+
+  <!-- 红榜 -->
+  <view wx:if="{{!loading}}" class="section">
+    <view class="section-header">
+      <view class="section-icon red">
+        <text>👑</text>
+      </view>
+      <text class="section-title">红榜</text>
+      <text class="section-badge">Top 3</text>
+    </view>
+
+    <view wx:if="{{redList.length === 0}}" class="empty-card">
+      <text class="empty-icon">✨</text>
+      <text class="empty-text">暂无红榜数据</text>
+      <text class="empty-hint">本期还没有产生高分部门</text>
+    </view>
+
+    <view wx:else class="rank-list">
+      <view 
+        wx:for="{{redList}}" 
+        wx:key="_id" 
+        class="rank-card red clickable"
+        bindtap="viewDetail"
+        data-id="{{item._id}}"
+      >
+        <view class="rank-number {{item.rank === 1 ? 'gold' : item.rank === 2 ? 'silver' : item.rank === 3 ? 'bronze' : ''}}">
+          <text>{{item.rank}}</text>
+        </view>
+        <view class="rank-info">
+          <text class="rank-dept">{{item.department}}</text>
+          <text class="rank-room">{{item.room}}</text>
+          <!-- 进度条 -->
+          <view class="score-progress">
+            <view class="progress-bar" style="width: {{item.totalScore / 70 * 100}}%;"></view>
+          </view>
+        </view>
+        <view class="rank-score red">
+          <text class="score-value">{{item.totalScore}}</text>
+          <text class="score-label">分</text>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <!-- 黑榜 -->
+  <view wx:if="{{!loading}}" class="section">
+    <view class="section-header">
+      <view class="section-icon black">
+        <text>⚠</text>
+      </view>
+      <text class="section-title">黑榜</text>
+      <text class="section-badge">Bottom 3</text>
+    </view>
+
+    <view wx:if="{{blackList.length === 0}}" class="empty-card">
+      <text class="empty-icon">🎉</text>
+      <text class="empty-text">暂无黑榜数据</text>
+      <text class="empty-hint">大家表现都很棒，继续保持！</text>
+    </view>
+
+    <view wx:else class="rank-list">
+      <view 
+        wx:for="{{blackList}}" 
+        wx:key="_id" 
+        class="rank-card black clickable"
+        bindtap="viewBlackDetail"
+        data-id="{{item._id}}"
+      >
+        <view class="rank-number danger">
+          <text>{{item.reverseRank}}</text>
+        </view>
+        <view class="rank-info">
+          <text class="rank-dept">{{item.department}}</text>
+          <text class="rank-room">{{item.room}}</text>
+        </view>
+        <view class="rank-score-container">
+          <text class="rank-score black">{{item.totalScore}}</text>
+          <text class="view-detail">查看扣分项</text>
+        </view>
+      </view>
+      
+      <!-- 黑榜少于3个时的说明 -->
+      <view wx:if="{{blackList.length < 3}}" class="blacklist-hint">
+        <text class="hint-icon">ℹ️</text>
+        <text class="hint-text">本期满分或与红榜同分的部门较多，黑榜仅显示{{blackList.length}}个</text>
+      </view>
+    </view>
+  </view>
+</view>
+
+<!-- 密码弹窗 -->
+<view wx:if="{{showPasswordModal}}" class="modal-mask" bindtap="cancelPasswordModal">
+  <view class="password-modal" catchtap="">
+    <view class="password-modal-header">
+      <text class="password-modal-title">管理入口验证</text>
+      <view class="modal-close" bindtap="cancelPasswordModal">✕</view>
+    </view>
+    <view class="password-modal-body">
+      <text class="password-hint">请输入管理密码</text>
+      <input 
+        class="password-input"
+        type="password"
+        placeholder="请输入密码"
+        value="{{passwordInput}}"
+        bindinput="onPasswordInput"
+        focus="{{showPasswordModal}}"
+      />
+    </view>
+    <view class="password-modal-footer">
+      <button class="btn-cancel" bindtap="cancelPasswordModal">取消</button>
+      <button class="btn-confirm" bindtap="confirmPassword" loading="{{passwordVerifying}}">确认</button>
+    </view>
+  </view>
+</view>
+
+<!-- 详情弹窗 -->
+<view wx:if="{{showDetail}}" class="modal-mask" bindtap="closeDetail">
+  <view class="modal-content" catchtap="">
+    <view class="modal-header">
+      <view class="modal-title">
+        <text class="modal-dept">{{selectedInspection.department}}</text>
+        <text class="modal-subtitle">{{selectedInspection.room}} - {{selectedInspection.date}}</text>
+      </view>
+      <view class="modal-score-badge {{selectedInspection.totalScore < 60 ? 'danger' : ''}}">
+        <text class="badge-value">{{selectedInspection.totalScore}}</text>
+        <text class="badge-label">分</text>
+      </view>
+      <view class="modal-close" bindtap="closeDetail">✕</view>
+    </view>
+
+    <scroll-view scroll-y class="modal-body">
+      <view wx:if="{{deductionItems.length === 0}}" class="empty-state">
+        <text class="empty-status-icon">✅</text>
+        <text>所有项目均获满分</text>
+      </view>
+
+      <view wx:else class="deduction-list">
+        <view wx:for="{{deductionItems}}" wx:key="item" class="deduction-card {{item.score <= 4 ? 'critical' : item.score < 10 ? 'warning' : 'perfect'}}">
+          <view class="deduction-header">
+            <view class="deduction-item-info">
+              <text class="deduction-item">{{item.item}}</text>
+              <text wx:if="{{item.score < 10}}" class="deduction-diff">(-{{10 - item.score}}分)</text>
+            </view>
+            <view class="deduction-score-box">
+              <text class="score-current">{{item.score}}</text>
+              <text class="score-total">/10分</text>
+            </view>
+          </view>
+          
+          <view wx:if="{{item.remark}}" class="deduction-remark">
+            <text class="remark-prefix">📝 备注：</text>
+            <text>{{item.remark}}</text>
+          </view>
+          
+          <view wx:if="{{item.images.length > 0}}" class="deduction-images">
+            <image 
+              wx:for="{{item.images}}" 
+              wx:for-item="img" 
+              wx:for-index="idx"
+              wx:key="idx"
+              src="{{img}}" 
+              class="deduction-image"
+              mode="aspectFill"
+              bindtap="previewImage"
+              data-url="{{img}}"
+              data-urls="{{item.images}}"
+            />
+          </view>
+        </view>
+      </view>
+    </scroll-view>
+  </view>
+</view>

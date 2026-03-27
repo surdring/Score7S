@@ -1,0 +1,236 @@
+/* app.wxss - 全局样式 */
+
+/* 基础变量 */
+page {
+  --primary-color: #3B82F6;
+  --primary-light: #DBEAFE;
+  --success-color: #10B981;
+  --warning-color: #F59E0B;
+  --danger-color: #EF4444;
+  --text-primary: #111827;
+  --text-secondary: #6B7280;
+  --text-hint: #9CA3AF;
+  --bg-primary: #F9FAFB;
+  --bg-white: #FFFFFF;
+  --border-color: #E5E7EB;
+  
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
+  font-size: 28rpx;
+  color: var(--text-primary);
+  background-color: var(--bg-primary);
+  box-sizing: border-box;
+}
+
+/* 通用工具类 */
+.container {
+  padding: 32rpx;
+  padding-bottom: calc(32rpx + env(safe-area-inset-bottom));
+}
+
+.card {
+  background-color: var(--bg-white);
+  border-radius: 24rpx;
+  padding: 32rpx;
+  margin-bottom: 24rpx;
+  box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.05);
+}
+
+.card-title {
+  font-size: 32rpx;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 24rpx;
+}
+
+/* 按钮样式 */
+.btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 88rpx;
+  border-radius: 16rpx;
+  font-size: 32rpx;
+  font-weight: 500;
+}
+
+.btn-primary {
+  background-color: var(--primary-color);
+  color: #FFFFFF;
+}
+
+.btn-primary:active {
+  background-color: #2563EB;
+}
+
+.btn-secondary {
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+  border: 2rpx solid var(--border-color);
+}
+
+.btn-danger {
+  background-color: var(--danger-color);
+  color: #FFFFFF;
+}
+
+.btn-disabled {
+  background-color: #D1D5DB;
+  color: #9CA3AF;
+}
+
+/* 标签样式 */
+.tag {
+  display: inline-flex;
+  align-items: center;
+  padding: 8rpx 16rpx;
+  border-radius: 8rpx;
+  font-size: 24rpx;
+}
+
+.tag-primary {
+  background-color: var(--primary-light);
+  color: var(--primary-color);
+}
+
+.tag-success {
+  background-color: #D1FAE5;
+  color: var(--success-color);
+}
+
+.tag-warning {
+  background-color: #FEF3C7;
+  color: var(--warning-color);
+}
+
+.tag-danger {
+  background-color: #FEE2E2;
+  color: var(--danger-color);
+}
+
+/* 分数按钮组 */
+.score-btn-group {
+  display: flex;
+  gap: 16rpx;
+}
+
+.score-btn {
+  flex: 1;
+  height: 72rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 12rpx;
+  font-size: 28rpx;
+  font-weight: 500;
+  background-color: var(--bg-primary);
+  color: var(--text-secondary);
+  border: 2rpx solid var(--border-color);
+}
+
+.score-btn.active {
+  background-color: var(--primary-color);
+  color: #FFFFFF;
+  border-color: var(--primary-color);
+}
+
+/* 输入框样式 */
+.input {
+  width: 100%;
+  height: 80rpx;
+  padding: 0 24rpx;
+  background-color: var(--bg-primary);
+  border: 2rpx solid var(--border-color);
+  border-radius: 12rpx;
+  font-size: 28rpx;
+}
+
+.input:focus {
+  border-color: var(--primary-color);
+}
+
+.textarea {
+  width: 100%;
+  min-height: 160rpx;
+  padding: 24rpx;
+  background-color: var(--bg-primary);
+  border: 2rpx solid var(--border-color);
+  border-radius: 12rpx;
+  font-size: 28rpx;
+}
+
+/* 空状态 */
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 80rpx 32rpx;
+  text-align: center;
+}
+
+.empty-icon {
+  width: 120rpx;
+  height: 120rpx;
+  margin-bottom: 32rpx;
+}
+
+.empty-text {
+  font-size: 32rpx;
+  color: var(--text-secondary);
+  margin-bottom: 16rpx;
+}
+
+.empty-hint {
+  font-size: 26rpx;
+  color: var(--text-hint);
+}
+
+/* 加载状态 */
+.loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 48rpx;
+}
+
+.loading-spinner {
+  width: 48rpx;
+  height: 48rpx;
+  border: 4rpx solid var(--border-color);
+  border-top-color: var(--primary-color);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* 底部安全区域 */
+.safe-area-bottom {
+  padding-bottom: calc(160rpx + env(safe-area-inset-bottom));
+}
+
+/* 模态框遮罩 */
+.modal-mask {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  z-index: 1000;
+}
+
+.modal-content {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: var(--bg-white);
+  border-radius: 32rpx 32rpx 0 0;
+  max-height: 80vh;
+  z-index: 1001;
+}
