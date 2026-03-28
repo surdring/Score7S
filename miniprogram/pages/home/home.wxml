@@ -2,9 +2,6 @@
 <view class="container">
   <!-- 头部标题 -->
   <view class="header">
-    <view class="header-icon">
-      <text class="icon-check">✓</text>
-    </view>
     <view class="header-content">
       <view class="header-title-row">
         <text class="header-title">7S联查看板</text>
@@ -35,7 +32,7 @@
         <text>👑</text>
       </view>
       <text class="section-title">红榜</text>
-      <text class="section-badge">Top 3</text>
+      <text class="section-badge">最优秀</text>
     </view>
 
     <view wx:if="{{redList.length === 0}}" class="empty-card">
@@ -58,10 +55,6 @@
         <view class="rank-info">
           <text class="rank-dept">{{item.department}}</text>
           <text class="rank-room">{{item.room}}</text>
-          <!-- 进度条 -->
-          <view class="score-progress">
-            <view class="progress-bar" style="width: {{item.totalScore / 70 * 100}}%;"></view>
-          </view>
         </view>
         <view class="rank-score red">
           <text class="score-value">{{item.totalScore}}</text>
@@ -78,7 +71,7 @@
         <text>⚠</text>
       </view>
       <text class="section-title">黑榜</text>
-      <text class="section-badge">Bottom 3</text>
+      <text class="section-badge">待改进</text>
     </view>
 
     <view wx:if="{{blackList.length === 0}}" class="empty-card">
@@ -104,7 +97,7 @@
         </view>
         <view class="rank-score-container">
           <text class="rank-score black">{{item.totalScore}}</text>
-          <text class="view-detail">查看扣分项</text>
+          <text class="view-detail-arrow">›</text>
         </view>
       </view>
       
@@ -169,15 +162,15 @@
       </view>
 
       <view wx:else class="deduction-list">
-        <view wx:for="{{deductionItems}}" wx:key="item" class="deduction-card {{item.score <= 4 ? 'critical' : item.score < 10 ? 'warning' : 'perfect'}}">
+        <view wx:for="{{deductionItems}}" wx:key="item" class="deduction-card {{item.level}}">
           <view class="deduction-header">
             <view class="deduction-item-info">
               <text class="deduction-item">{{item.item}}</text>
-              <text wx:if="{{item.score < 10}}" class="deduction-diff">(-{{10 - item.score}}分)</text>
+              <text class="deduction-diff">(-{{item.diff}}分)</text>
             </view>
             <view class="deduction-score-box">
               <text class="score-current">{{item.score}}</text>
-              <text class="score-total">/10分</text>
+              <text class="score-total">/{{item.maxScore}}分</text>
             </view>
           </view>
           

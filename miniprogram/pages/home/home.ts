@@ -15,6 +15,57 @@ interface Inspection {
   }>;
 }
 
+// 评分项满分映射（与评分页保持一致）
+const HOME_SCORING_MAX_SCORES: Record<string, number> = {
+  '地面': 20,
+  '桌面摆放': 20,
+  '文件资料': 10,
+  '电器设备': 20,
+  '办公椅': 10,
+  '窗台': 10,
+  '整体印象': 10,
+};
+
+type DeductionItem = {
+  item: string;
+  score: number;
+  maxScore: number;
+  diff: number;
+  level: 'critical' | 'warning' | 'perfect';
+  images: string[];
+  remark: string;
+};
+
+function buildDeductionItems(details: Inspection['details']): DeductionItem[] {
+  return details
+    .map((d) => {
+      const maxScore = HOME_SCORING_MAX_SCORES[d.item] ?? 10;
+      const safeScore = typeof d.score === 'number' ? d.score : Number(d.score);
+      const diff = Math.max(0, maxScore - safeScore);
+
+      const ratio = maxScore > 0 ? safeScore / maxScore : 1;
+      const level: DeductionItem['level'] = ratio <= 0.4 ? 'critical' : ratio < 1 ? 'warning' : 'perfect';
+
+      return {
+        item: d.item,
+        score: safeScore,
+        maxScore,
+        diff,
+        level,
+        images: d.images || [],
+        remark: d.remark || '',
+      };
+    })
+    .filter((d) => d.score < d.maxScore)
+    // 扣分多的排前面；扣分一样时，得分率低的更靠前
+    .sort((a, b) => {
+      if (b.diff !== a.diff) return b.diff - a.diff;
+      const ar = a.maxScore > 0 ? a.score / a.maxScore : 1;
+      const br = b.maxScore > 0 ? b.score / b.maxScore : 1;
+      return ar - br;
+    });
+}
+
 Page({
   data: {
     loading: true,
@@ -23,7 +74,7 @@ Page({
     selectedInspection: null as Inspection | null,
     showDetail: false,
     // 扣分项详情
-    deductionItems: [] as Array<{ item: string; score: number; images: string[]; remark: string }>,
+    deductionItems: [] as DeductionItem[],
     // 最新更新时间
     lastUpdateTime: '' as string,
     // 日期选择相关
@@ -184,10 +235,7 @@ Page({
     const inspection = this.data.blackList.find(item => item._id === id);
     
     if (inspection) {
-      // 过滤出扣分项，并按得分从低到高排序（最差的在前面）
-      const deductionItems = inspection.details
-        .filter(d => d.score < 10)
-        .sort((a, b) => a.score - b.score);
+      const deductionItems = buildDeductionItems(inspection.details);
       
       this.setData({
         selectedInspection: inspection,
@@ -203,8 +251,7 @@ Page({
     const inspection = this.data.redList.find(item => item._id === id);
     
     if (inspection) {
-      // 红榜也按得分升序排列，方便查看偶尔的扣分项
-      const deductionItems = [...inspection.details].sort((a, b) => a.score - b.score);
+      const deductionItems = buildDeductionItems(inspection.details);
       
       this.setData({
         selectedInspection: inspection,

@@ -9,23 +9,11 @@
 .header {
   display: flex;
   align-items: center;
-  gap: 24rpx;
   padding: 40rpx 32rpx;
   margin-bottom: 32rpx;
   background: linear-gradient(135deg, #3B82F6 0%, #6366F1 100%);
   border-radius: 32rpx;
   color: #FFFFFF;
-}
-
-.header-icon {
-  width: 80rpx;
-  height: 80rpx;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background-color: rgba(255, 255, 255, 0.2);
-  border-radius: 50%;
-  font-size: 40rpx;
 }
 
 .header-content {
@@ -180,17 +168,17 @@
 }
 
 .rank-number.gold {
-  background: linear-gradient(135deg, #FCD34D 0%, #F59E0B 100%);
+  background: linear-gradient(135deg, #FFD700 0%, #FFA500 100%);
   color: #FFFFFF;
 }
 
 .rank-number.silver {
-  background: linear-gradient(135deg, #D1D5DB 0%, #9CA3AF 100%);
+  background: linear-gradient(135deg, #C0C0C0 0%, #A0A0A0 100%);
   color: #FFFFFF;
 }
 
 .rank-number.bronze {
-  background: linear-gradient(135deg, #FDBA74 0%, #EA580C 100%);
+  background: linear-gradient(135deg, #CD7F32 0%, #B87333 100%);
   color: #FFFFFF;
 }
 
@@ -228,15 +216,12 @@
 .rank-score.red .score-value {
   font-size: 44rpx;
   font-weight: 700;
-  background: linear-gradient(135deg, #F97316 0%, #DC2626 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
+  color: #059669;
 }
 
 .rank-score.red .score-label {
   font-size: 24rpx;
-  color: #6B7280;
+  color: #059669;
   margin-left: 4rpx;
 }
 
@@ -253,13 +238,11 @@
   gap: 8rpx;
 }
 
-.view-detail {
-  font-size: 22rpx;
-  color: #DC2626;
-  background-color: #FEE2E2;
-  padding: 6rpx 16rpx;
-  border-radius: 20rpx;
-  border: 1rpx solid #FECACA;
+.view-detail-arrow {
+  font-size: 40rpx;
+  color: #9CA3AF;
+  font-weight: 300;
+  margin-left: 8rpx;
 }
 
 /* 黑榜少于3个时的说明 */
@@ -514,35 +497,20 @@
   margin-bottom: 24rpx;
 }
 
-/* 分数进度条 */
-.score-progress {
-  margin-top: 12rpx;
-  width: 100%;
-  height: 8rpx;
-  background-color: #E5E7EB;
-  border-radius: 4rpx;
-  overflow: hidden;
-}
-
-.progress-bar {
-  height: 100%;
-  background: linear-gradient(90deg, #10B981 0%, #34D399 100%);
-  border-radius: 4rpx;
-  transition: width 0.5s ease;
-}
-
 /* 日期选择器样式 */
 .date-selector {
-  margin-top: 12rpx;
+  margin-top: 16rpx;
+  display: flex;
+  justify-content: flex-start;
 }
 
 .date-picker-btn {
-  display: flex;
+  display: inline-flex;
   align-items: center;
   gap: 12rpx;
   background: rgba(255, 255, 255, 0.2);
-  padding: 12rpx 20rpx;
-  border-radius: 20rpx;
+  padding: 12rpx 24rpx;
+  border-radius: 24rpx;
 }
 
 .date-icon {
