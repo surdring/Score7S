@@ -5,23 +5,14 @@
   padding-bottom: env(safe-area-inset-bottom);
 }
 
-/* 头部 */
+/* 头部（已隐藏） */
 .header {
-  margin-bottom: 32rpx;
+  display: none;
 }
 
-.header-title {
-  display: block;
-  font-size: 40rpx;
-  font-weight: 600;
-  color: #111827;
-  margin-bottom: 8rpx;
-}
-
+.header-title,
 .header-subtitle {
-  display: block;
-  font-size: 26rpx;
-  color: #6B7280;
+  display: none;
 }
 
 /* 图表卡片 */

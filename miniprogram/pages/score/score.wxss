@@ -10,7 +10,7 @@
   top: 0;
   z-index: 100;
   background-color: #FFFFFF;
-  padding: 24rpx 32rpx;
+  padding: 20rpx 32rpx;
   border-bottom: 2rpx solid #E5E7EB;
   box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.05);
 }
@@ -22,16 +22,10 @@
   margin-bottom: 20rpx;
 }
 
-.header-title {
-  font-size: 32rpx;
-  font-weight: 600;
-  color: #111827;
-}
-
+/* 已删除头部标题和已评文字样式 */
+.header-title,
 .progress-text {
-  font-size: 24rpx;
-  color: #3B82F6;
-  font-weight: 500;
+  display: none;
 }
 
 /* 胶囊式选择器 */
@@ -104,20 +98,11 @@
   margin-left: 4rpx;
 }
 
-/* 进度条 */
-.progress-bar {
-  height: 6rpx;
-  background-color: #E5E7EB;
-  border-radius: 3rpx;
-  margin-top: 20rpx;
-  overflow: hidden;
-}
-
-.progress-fill {
-  height: 100%;
-  background: linear-gradient(90deg, #3B82F6, #60A5FA);
-  border-radius: 3rpx;
-  transition: width 0.3s ease;
+/* 底部进度条（已删除） */
+.progress-bar,
+.progress-fill,
+.progress-text-overlay {
+  display: none;
 }
 
 /* 评分列表 */
@@ -441,7 +426,8 @@
 }
 
 .submit-btn.disabled {
-  background-color: #93C5FD;
+  background-color: #E5E7EB;
+  color: #9CA3AF;
 }
 
 /* 成功页 */

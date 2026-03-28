@@ -3,10 +3,6 @@
   <!-- 头部标题 -->
   <view class="header">
     <view class="header-content">
-      <view class="header-title-row">
-        <text class="header-title">7S联查看板</text>
-        <text class="admin-link" bindtap="goToAdmin">⚙️ 管理</text>
-      </view>
       <!-- 日期选择器 -->
       <view class="date-selector">
         <picker mode="date" value="{{selectedDate}}" bindchange="onDateChange">
@@ -17,6 +13,7 @@
           </view>
         </picker>
       </view>
+      <text class="admin-link" bindtap="goToAdmin">⚙️ 管理</text>
     </view>
   </view>
 

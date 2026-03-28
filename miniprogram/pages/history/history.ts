@@ -12,6 +12,16 @@ Page({
     showDetail: false,
     // 导出
     exporting: false,
+    // 满分标准
+    scoringMaxScores: {
+      '地面': 20,
+      '桌面摆放': 20,
+      '文件资料': 10,
+      '电器设备': 20,
+      '办公椅': 10,
+      '窗台': 10,
+      '整体印象': 10,
+    } as Record<string, number>,
   },
 
   onLoad(options: any) {
@@ -102,29 +112,38 @@ Page({
 
   // 日期选择
   onDateChange(e: any) {
-    this.setData({ selectedDate: e.detail.value });
+    const newDate = e.detail.value;
+    this.setData({ selectedDate: newDate });
     this.applyFilter();
-  },
-
-  // 清除筛选
-  clearFilter() {
-    this.setData({
-      searchKeyword: '',
-      selectedDate: '',
-    });
-    this.applyFilter();
-    wx.showToast({ title: '已清除筛选', icon: 'success' });
+    // 如果日期被清空，显示提示
+    if (!newDate) {
+      wx.showToast({ title: '已显示全部日期数据', icon: 'none', duration: 1500 });
+    }
   },
 
   // 查看详情
   viewDetail(e: any) {
     const { id } = e.currentTarget.dataset;
+    console.log('点击列表项，data-id:', id);
+    
+    if (!id) {
+      console.error('data-id 为空，检查 wxml 绑定');
+      wx.showToast({ title: '数据异常，缺少ID', icon: 'none' });
+      return;
+    }
+    
     const inspection = this.data.filteredInspections.find((item: any) => item._id === id);
+    console.log('找到的记录:', inspection);
+    
     if (inspection) {
       this.setData({
         selectedInspection: inspection,
         showDetail: true,
       });
+      console.log('弹窗已显示，showDetail:', true);
+    } else {
+      console.error('未找到对应记录，id:', id);
+      wx.showToast({ title: '未找到记录', icon: 'none' });
     }
   },
 

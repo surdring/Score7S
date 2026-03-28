@@ -2,11 +2,6 @@
 <view wx:if="{{!submitted}}" class="page">
   <!-- 头部信息 - 紧凑布局 -->
   <view class="header">
-    <view class="header-top">
-      <text class="header-title">现场检查打分</text>
-      <text class="progress-text">已评: {{scoredCount}} / 7项</text>
-    </view>
-    
     <!-- 胶囊式选择器 -->
     <view class="capsule-row">
       <view class="capsule-half capsule-date">
@@ -47,11 +42,6 @@
           </view>
         </picker>
       </view>
-    </view>
-
-    <!-- 进度条 -->
-    <view class="progress-bar">
-      <view class="progress-fill" style="width: {{scoredCount / 7 * 100}}%;"></view>
     </view>
   </view>
 
@@ -191,11 +181,12 @@
       <text class="total-unit">分</text>
     </view>
     <button 
-      class="submit-btn {{submitting ? 'disabled' : ''}}"
+      class="submit-btn {{submitting || scoredCount < 7 ? 'disabled' : ''}}"
       bindtap="submit"
-      disabled="{{submitting}}"
+      disabled="{{submitting || scoredCount < 7}}"
     >
       <text wx:if="{{submitting}}">提交中...</text>
+      <text wx:elif="{{scoredCount < 7}}">还有{{7 - scoredCount}}项未评</text>
       <text wx:else>提交评分</text>
     </button>
   </view>

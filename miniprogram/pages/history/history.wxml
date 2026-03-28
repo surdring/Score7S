@@ -1,24 +1,5 @@
 <!--pages/history/history.wxml-->
 <view class="container">
-  <!-- 头部 -->
-  <view class="header">
-    <view class="header-left">
-      <text class="header-title">历史数据查询</text>
-      <text class="header-subtitle">查看过往打分记录</text>
-    </view>
-    <view class="header-right">
-      <text class="export-hint">导出当前筛选结果</text>
-      <button 
-        class="export-btn {{filteredInspections.length === 0 || exporting ? 'disabled' : ''}}"
-        bindtap="exportData"
-        disabled="{{filteredInspections.length === 0 || exporting}}"
-      >
-        <text class="export-icon">📥</text>
-        <text>导出</text>
-      </button>
-    </view>
-  </view>
-
   <!-- 筛选区域 -->
   <view class="filter-section">
     <view class="search-box">
@@ -38,11 +19,11 @@
         </picker>
       </view>
       <view 
-        wx:if="{{searchKeyword || selectedDate}}"
-        class="clear-filter-btn"
-        bindtap="clearFilter"
+        class="export-btn-light {{filteredInspections.length === 0 || exporting ? 'disabled' : ''}}"
+        bindtap="exportData"
       >
-        <text>清除</text>
+        <text class="export-icon">📥</text>
+        <text>导出</text>
       </view>
     </view>
   </view>
@@ -109,7 +90,7 @@
         <view wx:for="{{selectedInspection.details}}" wx:key="item" class="detail-card">
           <view class="detail-header">
             <text class="detail-item">{{item.item}}</text>
-            <text class="detail-score {{item.score <= 4 ? 'danger' : 'success'}}">{{item.score}}分</text>
+            <text class="detail-score {{item.score === scoringMaxScores[item.item] ? 'success' : 'danger'}}">{{item.score}}分</text>
           </view>
           <view wx:if="{{item.remark}}" class="detail-remark">
             <text>{{item.remark}}</text>
