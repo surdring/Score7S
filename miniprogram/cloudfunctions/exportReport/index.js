@@ -8,159 +8,37 @@ cloud.init({
 
 const db = cloud.database();
 
-// 评分项配置
-const SCORING_ITEMS = [
-  { name: '桌面摆放', desc: '物品摆放整齐，无私人物品，无杂物堆积' },
-  { name: '地面', desc: '地面干净整洁，无垃圾、污渍、水渍' },
-  { name: '窗台', desc: '窗台无灰尘、无杂物摆放，玻璃明亮' },
-  { name: '文件资料', desc: '文件资料分类明确，标识清晰，易于查找' },
-  { name: '电器设备', desc: '电器设备摆放整齐，无积尘，电线不杂乱' },
-  { name: '办公椅', desc: '办公椅摆放整齐，无损坏，无污渍' },
-  { name: '整体印象', desc: '办公室整体整洁有序，环境优美' }
-];
+// 评分项配置 - 与 score.ts 保持一致（字符串数组转对象格式便于导出使用）
+const SCORING_ITEM_NAMES = ['地面', '桌面摆放', '文件资料', '电器设备', '办公椅', '窗台', '整体印象'];
 
-const SCORE_OPTIONS = [10, 8, 4, 2];
+// 评分项最高分配置（与score.ts一致）
+const SCORING_MAX_SCORES = {
+  '地面': 20,
+  '桌面摆放': 20,
+  '文件资料': 10,
+  '电器设备': 20,
+  '办公椅': 10,
+  '窗台': 10,
+  '整体印象': 10,
+};
 
-// 固定部门与办公室顺序（与模板一致）
-const DEPARTMENTS_TEMPLATE = [
-  { name: '经营管控中心', rooms: ['经营管控中心（南面）1楼', '经营管控中心（北面）2楼'] },
-  { name: '供应二部', rooms: ['原料科（南屋）（1楼）', '原料科（北屋）（1楼）', '钢后科（1楼）'] },
-  { name: '供应一部', rooms: ['业务员大办公室（2楼）', '业务员小办公室（2楼）'] },
-  { name: '销售部', rooms: ['业务员办公室（3楼）', '合同管理员（3楼）', '副产品（3楼）'] },
-  { name: '人力资源部', rooms: ['招聘配置科（3楼）', '薪酬科（3楼）'] },
-  { name: '企管部', rooms: ['办公室（靠北）（4楼）'] },
-  { name: '审计监察部', rooms: ['办公室（中间与靠南）（4楼）'] },
-  { name: '财务部', rooms: ['资产科（4楼）', '结算中心（4楼）', '成本科（5楼)'] },
-  { name: '法务部', rooms: ['办公室（5楼）'] },
-  { name: '总经办', rooms: ['办公室（5楼）'] },
-  { name: '监察部', rooms: ['办公室（5楼）'] },
-  { name: '外矿部', rooms: ['办公室(5楼）'] },
-  { name: '财务部（工程楼）', rooms: ['三级账（工程部2楼）', '质计部-磅单计量（工程部2楼）', '资产科-合同租（工程部2楼）', '经营核算科北屋（工程部3楼）'] },
-  { name: '预算部（工程楼）', rooms: ['预算1（工程部2楼）', '预算2（工程部2楼）', '预算3（工程部2楼）'] },
-  { name: '公司办公室（工程楼）', rooms: ['办公室（工程部2楼）', '司机办公室（工程部2楼）', '资料室（工程部3楼东）', '文印室（工程楼1楼）'] },
-  { name: '工程审计', rooms: ['工程楼(3楼)'] },
-  { name: '工程部', rooms: ['工程部办公室（工程楼2楼）'] },
-];
+// 评分项完整配置（用于导出表头）
+const SCORING_ITEMS = SCORING_ITEM_NAMES.map(name => ({
+  name,
+  maxScore: SCORING_MAX_SCORES[name],
+  desc: {
+    '地面': '地面干净整洁，无垃圾、污渍、水渍',
+    '桌面摆放': '物品摆放整齐，无私人物品，无杂物堆积',
+    '文件资料': '文件资料分类明确，标识清晰，易于查找',
+    '电器设备': '电器设备摆放整齐，无积尘，电线不杂乱',
+    '办公椅': '办公椅摆放整齐，无损坏，无污渍',
+    '窗台': '窗台无灰尘、无杂物摆放，玻璃明亮',
+    '整体印象': '办公室整体整洁有序，环境优美'
+  }[name]
+}));
 
-// 生成CSV内容（按照模板格式）
-function generateCSVContent(inspections, departments, month) {
-  // 按部门、办公室、日期分组（每个办公室每天只取一条记录）
-  const groupedMap = new Map();
-  
-  inspections.forEach(record => {
-    // record.date 格式如 "2024-01-15" 或 "2024年01月15日"
-    const recordDate = record.date || '';
-    const key = `${record.department}-${record.room}-${recordDate}`;
-    
-    if (!groupedMap.has(key)) {
-      groupedMap.set(key, {
-        department: record.department,
-        room: record.room,
-        date: recordDate,
-        details: {},
-        createdAt: record.createdAt || null,
-      });
-    }
-
-    const group = groupedMap.get(key);
-    // 同一天有多条记录时，取 createdAt 最新的一条
-    const toMillis = (v) => {
-      if (!v) return 0;
-      if (typeof v === 'number') return v;
-      if (v instanceof Date) return v.getTime();
-      if (typeof v === 'object' && v.$date) return new Date(v.$date).getTime();
-      if (typeof v === 'object' && typeof v.seconds === 'number') return v.seconds * 1000;
-      return 0;
-    };
-    
-    const shouldReplace = toMillis(record.createdAt) >= toMillis(group.createdAt);
-    if (shouldReplace) {
-      group.createdAt = record.createdAt || null;
-      group.details = {};
-      (record.details || []).forEach(detail => {
-        group.details[detail.item] = detail.score;
-      });
-    }
-  });
-
-  // 构建CSV行
-  const rows = [];
-  
-  // 第一行：标题（与模板列数对齐：33列）
-  rows.push('职能部室（办公室）7S联查评分表' + ','.repeat(32));
-  
-  // 第二行：日期
-  const dateStr = month || new Date().toISOString().slice(0, 7);
-  rows.push(`日期：${dateStr}` + ','.repeat(32));
-  
-  // 第三行：表头 - 部门名称、办公室位置、7个大项标题
-  let headerRow = ['部门名称', '办公室位置'];
-  SCORING_ITEMS.forEach(item => {
-    headerRow.push(item.name, '', '', '');
-  });
-  headerRow.push('总评分', '');
-  rows.push(headerRow.join(','));
-  
-  // 第四行：描述行
-  let descRow = ['', ''];
-  SCORING_ITEMS.forEach(item => {
-    descRow.push(item.desc, '', '', '');
-  });
-  descRow.push('', '');
-  rows.push(descRow.join(','));
-  
-  // 第五行：分数选项行
-  let scoreRow = ['', ''];
-  SCORING_ITEMS.forEach(() => {
-    scoreRow.push('10分', '8分', '4分', '2分');
-  });
-  scoreRow.push('', '');
-  rows.push(scoreRow.join(','));
-
-  // 数据行：按日期分组，每个办公室每天一行
-  // 先收集所有日期并排序
-  const dateSet = new Set();
-  groupedMap.forEach((data, key) => {
-    if (data.date) dateSet.add(data.date);
-  });
-  const sortedDates = Array.from(dateSet).sort((a, b) => a.localeCompare(b));
-
-  // 按日期顺序输出
-  const deptList = (departments && departments.length > 0) ? departments : DEPARTMENTS_TEMPLATE;
-  sortedDates.forEach(date => {
-    deptList.forEach(dept => {
-      dept.rooms.forEach(room => {
-        const key = `${dept.name}-${room}-${date}`;
-        const data = groupedMap.get(key);
-        if (!data) return; // 该办公室当天无记录则跳过
-
-        let dataRow = [dept.name, room];
-        let totalScore = 0;
-
-        SCORING_ITEMS.forEach(item => {
-          const score = data.details[item.name] || 0;
-          totalScore += score;
-
-          // 在对应分数列打勾（用"✓"表示）
-          SCORE_OPTIONS.forEach(opt => {
-            if (score === opt) {
-              dataRow.push('✓');
-            } else {
-              dataRow.push('');
-            }
-          });
-        });
-
-        dataRow.push(totalScore > 0 ? totalScore.toString() : '');
-        dataRow.push('');
-        rows.push(dataRow.join(','));
-      });
-    });
-  });
-
-  // 添加UTF-8 BOM以确保Excel正确识别中文
-  return '\uFEFF' + rows.join('\n');
-}
+// 固定部门与办公室顺序（已从代码中移除硬编码模板，现从实际数据中提取）
+// 注意：DEPARTMENTS_TEMPLATE 常量已废弃，导出时直接从检查记录中提取部门/办公室
 
 // 生成Excel内容（使用exceljs支持完整样式）
 async function generateExcelBuffer(inspections, departments, month, selectedDate) {
@@ -184,8 +62,44 @@ async function generateExcelBuffer(inspections, departments, month, selectedDate
   // 定义字体
   const defaultFont = { name: '等线', size: 10 };
 
-  // 第1行：标题（合并31列）
-  worksheet.mergeCells('A1:AE1');
+  // ==================== 从数据库查询全部部门/办公室 ====================
+  let allDepartments = [];
+  let allRooms = [];
+  try {
+    // 查询所有部门
+    const deptsRes = await db.collection('departments').orderBy('order', 'asc').get();
+    allDepartments = deptsRes.data || [];
+    
+    // 查询所有办公室
+    const roomsRes = await db.collection('rooms').orderBy('order', 'asc').get();
+    allRooms = roomsRes.data || [];
+  } catch (err) {
+    console.error('查询部门/办公室失败', err);
+    // 如果查询失败，退回到从检查记录中提取
+  }
+
+  // 构建部门-办公室映射（从数据库数据）
+  const dbDeptRoomsMap = new Map(); // deptName -> Array of roomNames
+  if (allDepartments.length > 0 && allRooms.length > 0) {
+    // 建立部门ID到名称的映射
+    const deptIdToName = new Map();
+    allDepartments.forEach(d => deptIdToName.set(d._id, d.name));
+    
+    // 按部门分组办公室
+    allDepartments.forEach(dept => {
+      dbDeptRoomsMap.set(dept.name, []);
+    });
+    
+    allRooms.forEach(room => {
+      const deptName = deptIdToName.get(room.departmentId);
+      if (deptName && dbDeptRoomsMap.has(deptName)) {
+        dbDeptRoomsMap.get(deptName).push(room.name);
+      }
+    });
+  }
+
+  // 第1行：标题（合并列：2列固定 + 7个评分项 + 1列总评分 = 10列）
+  worksheet.mergeCells('A1:J1');
   const titleCell = worksheet.getCell('A1');
   titleCell.value = '职能部室（办公室）7S联查评分表';
   titleCell.font = { name: '等线', size: 14, bold: true };
@@ -200,7 +114,7 @@ async function generateExcelBuffer(inspections, departments, month, selectedDate
   worksheet.getRow(1).height = 40;
 
   // 第2行：日期
-  worksheet.mergeCells('A2:AE2');
+  worksheet.mergeCells('A2:J2');
   let formattedDate;
   
   // 优先使用传入的 selectedDate，其次从数据中推断，最后使用当前日期
@@ -262,7 +176,7 @@ async function generateExcelBuffer(inspections, departments, month, selectedDate
 
   // 显式为表头区域所有单元格添加边框（解决exceljs合并单元格边框丢失问题）
   for (let r = 3; r <= 5; r++) {
-    for (let c = 1; c <= 31; c++) {
+    for (let c = 1; c <= 10; c++) {
       worksheet.getCell(r, c).border = thinBorder;
     }
   }
@@ -271,51 +185,45 @@ async function generateExcelBuffer(inspections, departments, month, selectedDate
   const headerRow3 = worksheet.getRow(3);
   headerRow3.height = 30; // 统一高度
   for (let i = 0; i < SCORING_ITEMS.length; i++) {
-    const startCol = 3 + i * 4;
-    const endCol = startCol + 3;
-    const cell = headerRow3.getCell(startCol);
+    const col = 3 + i;
+    const cell = headerRow3.getCell(col);
     cell.value = SCORING_ITEMS[i].name;
     cell.font = { name: '等线', size: 10, bold: true };
     cell.alignment = centerAlignment;
-    worksheet.mergeCells(3, startCol, 3, endCol);
   }
 
   // 第4行：描述行
   const headerRow4 = worksheet.getRow(4);
-  headerRow4.height = 30; // 修正高度，与第3行保持一致
+  headerRow4.height = 30; // 降低高度，因为减少了换行
   for (let i = 0; i < SCORING_ITEMS.length; i++) {
-    const startCol = 3 + i * 4;
-    const endCol = startCol + 3;
-    const cell = headerRow4.getCell(startCol);
+    const col = 3 + i;
+    const cell = headerRow4.getCell(col);
     cell.value = SCORING_ITEMS[i].desc;
     cell.font = { name: '等线', size: 9 };
-    // 修正对齐方式：改为居中对齐
-    cell.alignment = centerAlignment;
-    worksheet.mergeCells(4, startCol, 4, endCol);
+    // 修正对齐方式：居中且换行（作为兜底）
+    cell.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
   }
 
-  // 第5行：分数档位
+  // 第5行：最高分
   const headerRow5 = worksheet.getRow(5);
   headerRow5.height = 20;
   for (let i = 0; i < SCORING_ITEMS.length; i++) {
-    const startCol = 3 + i * 4;
-    ['10分', '8分', '4分', '2分'].forEach((val, idx) => {
-      const cell = headerRow5.getCell(startCol + idx);
-      cell.value = val;
-      cell.font = { name: '等线', size: 9 };
-      cell.alignment = centerAlignment;
-    });
+    const col = 3 + i;
+    const cell = headerRow5.getCell(col);
+    cell.value = SCORING_ITEMS[i].maxScore + '分';
+    cell.font = { name: '等线', size: 9 };
+    cell.alignment = centerAlignment;
   }
 
-  // 合并总评分 AE3:AE5 (仅AE列)
-  worksheet.mergeCells('AE3:AE5');
-  const totalScoreHeaderCell = worksheet.getCell('AE3');
+  // 合并总评分 J3:J5 (第10列)
+  worksheet.mergeCells('J3:J5');
+  const totalScoreHeaderCell = worksheet.getCell('J3');
   totalScoreHeaderCell.value = '总评分';
   totalScoreHeaderCell.font = { name: '等线', size: 10, bold: true };
   totalScoreHeaderCell.alignment = centerAlignment;
   totalScoreHeaderCell.border = thinBorder;
   // 确保合并区域的每一格都有边框
-  ['AE3', 'AE4', 'AE5'].forEach(ref => {
+  ['J3', 'J4', 'J5'].forEach(ref => {
     worksheet.getCell(ref).border = thinBorder;
   });
 
@@ -325,7 +233,13 @@ async function generateExcelBuffer(inspections, departments, month, selectedDate
     const recordDate = record.date || '';
     const key = `${record.department}-${record.room}-${recordDate}`;
     if (!groupedMap.has(key)) {
-      groupedMap.set(key, { details: {}, date: recordDate, createdAt: record.createdAt || null });
+      groupedMap.set(key, { 
+        department: record.department,
+        room: record.room,
+        details: {}, 
+        date: recordDate, 
+        createdAt: record.createdAt || null 
+      });
     }
     const group = groupedMap.get(key);
     const toMillis = (v) => {
@@ -357,49 +271,82 @@ async function generateExcelBuffer(inspections, departments, month, selectedDate
     sortedDates.push(`${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`);
   }
 
-  // 数据行
+  // 数据行：使用数据库中的全部部门/办公室，不依赖硬编码模板
   let currentRow = 6;
+  
+  // 确定部门/办公室列表优先级：数据库 > 检查记录
+  let deptRoomsMap;
+  
+  if (dbDeptRoomsMap.size > 0) {
+    // 使用从数据库查询的部门/办公室
+    deptRoomsMap = dbDeptRoomsMap;
+  } else {
+    // 退回到从检查记录中提取（兼容旧数据）
+    deptRoomsMap = new Map();
+    groupedMap.forEach((data, key) => {
+      const parts = String(key).split('-');
+      const deptName = parts[0];
+      const room = parts.slice(1, parts.length - 1).join('-');
+      
+      if (!deptRoomsMap.has(deptName)) {
+        deptRoomsMap.set(deptName, []);
+      }
+      if (!deptRoomsMap.get(deptName).includes(room)) {
+        deptRoomsMap.get(deptName).push(room);
+      }
+    });
+  }
+  
+  // 按日期、部门输出数据
   sortedDates.forEach(date => {
-    // 记录每个部门的起始行，用于后续合并
     const deptRowMap = new Map(); // deptName -> { startRow, endRow }
     
-    DEPARTMENTS_TEMPLATE.forEach(dept => {
+    // 按部门名称排序输出
+    const sortedDepts = Array.from(deptRoomsMap.keys()).sort();
+    
+    sortedDepts.forEach(deptName => {
       const deptStartRow = currentRow;
+      const rooms = deptRoomsMap.get(deptName).sort();
       
-      dept.rooms.forEach(room => {
-        const dataKey = `${dept.name}-${room}-${date}`;
+      rooms.forEach(room => {
+        const dataKey = `${deptName}-${room}-${date}`;
         const data = groupedMap.get(dataKey);
-
+        
+        // 即使该办公室当天无记录，也输出一行（显示为空）
         const row = worksheet.getRow(currentRow);
-        const rowValues = [dept.name, room];
+        const rowValues = [deptName, room];
         let totalScore = 0;
         
-        SCORING_ITEMS.forEach(item => {
-          const score = data?.details?.[item.name] || 0;
-          totalScore += score;
-          if (score === 10) rowValues.push('✓', '', '', '');
-          else if (score === 8) rowValues.push('', '✓', '', '');
-          else if (score === 4) rowValues.push('', '', '✓', '');
-          else if (score === 2) rowValues.push('', '', '', '✓');
-          else rowValues.push('', '', '', '');
-        });
-        rowValues.push(totalScore > 0 ? totalScore : '');
+        if (data) {
+          SCORING_ITEMS.forEach(item => {
+            const score = data.details?.[item.name] || 0;
+            totalScore += score;
+            rowValues.push(score > 0 ? score : '');
+          });
+          rowValues.push(totalScore > 0 ? totalScore : '');
+        } else {
+          // 无记录时，评分项和总分都为空
+          SCORING_ITEMS.forEach(() => {
+            rowValues.push('');
+          });
+          rowValues.push('');
+        }
         
         row.values = rowValues;
         row.font = defaultFont;
         row.alignment = centerAlignment;
-        row.height = 20; // 调小数据行高
-        for (let i = 1; i <= 31; i++) {
+        row.height = 20;
+        for (let i = 1; i <= 10; i++) {
           row.getCell(i).border = thinBorder;
         }
         
         currentRow++;
       });
       
-      // 记录部门的行范围
+      // 记录部门的行范围（用于合并单元格）
       const deptEndRow = currentRow - 1;
-      if (deptStartRow <= deptEndRow && dept.rooms.length > 1) {
-        deptRowMap.set(dept.name, { startRow: deptStartRow, endRow: deptEndRow });
+      if (deptStartRow <= deptEndRow && rooms.length > 1) {
+        deptRowMap.set(deptName, { startRow: deptStartRow, endRow: deptEndRow });
       }
     });
 
@@ -420,14 +367,14 @@ async function generateExcelBuffer(inspections, departments, month, selectedDate
     });
   });
 
-  // 设置列宽（与原模板对齐）
-  worksheet.getColumn(1).width = 20; // 部门名称
-  worksheet.getColumn(2).width = 30; // 办公室位置
-  // 每个大项4列（10分/8分/4分/2分）
-  for (let i = 3; i <= 30; i++) {
-    worksheet.getColumn(i).width = 7; // 分数列调整
+  // 设置列宽
+  worksheet.getColumn(1).width = 12; // 部门名称：再窄一点
+  worksheet.getColumn(2).width = 40; // 办公室位置：再宽一点
+  // 每个评分项1列
+  for (let i = 3; i <= 9; i++) {
+    worksheet.getColumn(i).width = 30; // 检查项：再宽一点（减少换行）
   }
-  worksheet.getColumn(31).width = 12; // 总评分 AE列
+  worksheet.getColumn(10).width = 10; // 总评分 J列
 
   // 冻结窗格：冻结前5行与前2列
   // worksheet.views = [
@@ -437,43 +384,27 @@ async function generateExcelBuffer(inspections, departments, month, selectedDate
   // ==================== 添加红黑榜工作表 ====================
   const rankSheet = workbook.addWorksheet('红黑榜排名');
 
-  // 计算每个办公室的最新评分（按日期取最新）
-  const officeScores = [];
-  DEPARTMENTS_TEMPLATE.forEach(dept => {
-    dept.rooms.forEach(room => {
-      // 查找该办公室的所有记录，取最新日期的
-      const records = [];
-      sortedDates.forEach(date => {
-        const dataKey = `${dept.name}-${room}-${date}`;
-        const data = groupedMap.get(dataKey);
-        if (data && data.date) {
-          let totalScore = 0;
-          SCORING_ITEMS.forEach(item => {
-            totalScore += data.details?.[item.name] || 0;
-          });
-          records.push({ date: data.date, score: totalScore });
-        }
-      });
-      // 取最新日期的分数
-      if (records.length > 0) {
-        records.sort((a, b) => b.date.localeCompare(a.date));
-        officeScores.push({
-          department: dept.name,
-          room: room,
-          score: records[0].score,
-          date: records[0].date
-        });
-      } else {
-        // 无评分记录，分数为0
-        officeScores.push({
-          department: dept.name,
-          room: room,
-          score: 0,
-          date: '-'
-        });
-      }
+  // 计算每个办公室的最新评分（基于实际记录，避免模板与数据库名称不一致导致空榜）
+  const officeLatestMap = new Map();
+  groupedMap.forEach((data, dataKey) => {
+    // 从data对象中获取部门和办公室信息，而不是解析dataKey字符串
+    const dept = data.department;
+    const room = data.room;
+    const date = data.date;
+
+    let totalScore = 0;
+    SCORING_ITEMS.forEach(item => {
+      totalScore += data.details?.[item.name] || 0;
     });
+
+    const key = `${dept}|${room}`;
+    const prev = officeLatestMap.get(key);
+    if (!prev || String(date).localeCompare(String(prev.date)) > 0) {
+      officeLatestMap.set(key, { department: dept, room, score: totalScore, date });
+    }
   });
+
+  const officeScores = Array.from(officeLatestMap.values());
 
   // 按分数排序
   officeScores.sort((a, b) => b.score - a.score);
@@ -496,7 +427,7 @@ async function generateExcelBuffer(inspections, departments, month, selectedDate
   // 黑榜候选：从不在红榜且非满分的记录中选取（严格排除，无兜底）
   const redKeySet = new Set(redList.map(i => `${i.department}|${i.room}`));
   const blackCandidates = officeScores.filter(item => 
-    item.score > 0 && item.score < 70 && !redKeySet.has(`${item.department}|${item.room}`)
+    item.score > 0 && item.score < 100 && !redKeySet.has(`${item.department}|${item.room}`)
   );
   // 注意：如果所有非满分记录都在红榜中，blackCandidates为空，黑榜即为空
 
@@ -514,7 +445,7 @@ async function generateExcelBuffer(inspections, departments, month, selectedDate
   const blackList = rankedForBlack.filter(item => item.reverseRank <= 3);
 
   // 红黑榜标题
-  rankSheet.mergeCells('A1:E1');
+  rankSheet.mergeCells('A1:D1');
   const rankTitleCell = rankSheet.getCell('A1');
   rankTitleCell.value = `${formattedDate} 7S检查红黑榜`;
   rankTitleCell.font = { name: '等线', size: 14, bold: true };
@@ -523,7 +454,7 @@ async function generateExcelBuffer(inspections, departments, month, selectedDate
   rankSheet.getRow(1).height = 30;
 
   // 红榜标题
-  rankSheet.mergeCells('A2:E2');
+  rankSheet.mergeCells('A2:D2');
   const redTitleCell = rankSheet.getCell('A2');
   redTitleCell.value = '红榜（得分最高）';
   redTitleCell.font = { name: '等线', size: 12, bold: true, color: { argb: 'FF0000' } };
@@ -534,7 +465,7 @@ async function generateExcelBuffer(inspections, departments, month, selectedDate
 
   // 红榜表头
   const redHeaderRow = rankSheet.getRow(3);
-  ['排名', '部门', '办公室', '得分', '检查日期'].forEach((val, idx) => {
+  ['排名', '部门', '办公室', '得分'].forEach((val, idx) => {
     const cell = redHeaderRow.getCell(idx + 1);
     cell.value = val;
     cell.font = { name: '等线', size: 10, bold: true };
@@ -548,7 +479,7 @@ async function generateExcelBuffer(inspections, departments, month, selectedDate
   let rankRow = 4;
   redList.forEach((item, index) => {
     const row = rankSheet.getRow(rankRow);
-    [item.rank || (index + 1), item.department, item.room, item.score, item.date].forEach((val, idx) => {
+    [item.rank || (index + 1), item.department, item.room, item.score].forEach((val, idx) => {
       const cell = row.getCell(idx + 1);
       cell.value = val;
       cell.font = defaultFont;
@@ -561,7 +492,7 @@ async function generateExcelBuffer(inspections, departments, month, selectedDate
 
   // 黑榜标题（空一行后）
   rankRow++;
-  rankSheet.mergeCells(`A${rankRow}:E${rankRow}`);
+  rankSheet.mergeCells(`A${rankRow}:D${rankRow}`);
   const blackTitleCell = rankSheet.getCell(`A${rankRow}`);
   blackTitleCell.value = '黑榜（得分最低）';
   blackTitleCell.font = { name: '等线', size: 12, bold: true };
@@ -574,7 +505,7 @@ async function generateExcelBuffer(inspections, departments, month, selectedDate
 
   // 黑榜表头
   const blackHeaderRow = rankSheet.getRow(rankRow);
-  ['排名', '部门', '办公室', '得分', '检查日期'].forEach((val, idx) => {
+  ['排名', '部门', '办公室', '得分'].forEach((val, idx) => {
     const cell = blackHeaderRow.getCell(idx + 1);
     cell.value = val;
     cell.font = { name: '等线', size: 10, bold: true };
@@ -589,7 +520,7 @@ async function generateExcelBuffer(inspections, departments, month, selectedDate
   // 黑榜数据
   blackList.forEach((item, index) => {
     const row = rankSheet.getRow(rankRow);
-    [item.reverseRank || (index + 1), item.department, item.room, item.score, item.date].forEach((val, idx) => {
+    [item.reverseRank || (index + 1), item.department, item.room, item.score].forEach((val, idx) => {
       const cell = row.getCell(idx + 1);
       cell.value = val;
       cell.font = defaultFont;
@@ -603,7 +534,7 @@ async function generateExcelBuffer(inspections, departments, month, selectedDate
   // 黑榜少于3个时的备注说明
   if (blackList.length < 3) {
     rankRow++;
-    rankSheet.mergeCells(`A${rankRow}:E${rankRow}`);
+    rankSheet.mergeCells(`A${rankRow}:D${rankRow}`);
     const hintCell = rankSheet.getCell(`A${rankRow}`);
     hintCell.value = `ℹ️ 本期满分或与红榜同分的部门较多，黑榜仅显示${blackList.length}个`;
     hintCell.font = { name: '等线', size: 9, color: { argb: '666666' } };
@@ -614,9 +545,9 @@ async function generateExcelBuffer(inspections, departments, month, selectedDate
   // 设置红黑榜列宽
   rankSheet.getColumn(1).width = 10; // 排名
   rankSheet.getColumn(2).width = 20; // 部门
-  rankSheet.getColumn(3).width = 30; // 办公室
+  rankSheet.getColumn(3).width = 40; // 办公室
   rankSheet.getColumn(4).width = 10; // 得分
-  rankSheet.getColumn(5).width = 15; // 检查日期
+
 
   // ==================== 红黑榜工作表结束 ====================
 
@@ -939,7 +870,7 @@ async function generateBulletinBuffer(inspections, selectedDate) {
   // 黑榜：从不在红榜且非满分的记录中选取（严格排除，无兜底）
   const redIds = new Set(redList.map(r => r._id));
   const blackCandidates = rankedRecords.filter(r => 
-    r.totalScore < 70 && !redIds.has(r._id)
+    r.totalScore < 100 && !redIds.has(r._id)
   );
   // 注意：如果所有非满分记录都在红榜中，blackCandidates为空，黑榜即为空
 
@@ -1194,16 +1125,10 @@ exports.main = async (event, context) => {
     if (returnContent) {
       const result = { success: true, dateStr, totalRecords: inspections.length };
 
-      if (format === 'csv' || format === 'both') {
-        result.csvFileName = `7S联查评分表_${dateStr}.csv`;
-        result.csvContent = generateCSVContent(inspections, departments, month);
-      }
-
-      if (format === 'xlsx' || format === 'both') {
-        const excelBuffer = await generateExcelBuffer(inspections, departments, month, date);
-        result.xlsxFileName = `7S联查评分表_${dateStr}.xlsx`;
-        result.xlsxBase64 = Buffer.from(excelBuffer).toString('base64');
-      }
+      // 只生成Excel格式
+      const excelBuffer = await generateExcelBuffer(inspections, departments, month, date);
+      result.xlsxFileName = `7S联查评分表_${dateStr}.xlsx`;
+      result.xlsxBase64 = Buffer.from(excelBuffer).toString('base64');
 
       // 公示榜格式
       if (format === 'bulletin') {
@@ -1216,41 +1141,21 @@ exports.main = async (event, context) => {
       return result;
     }
 
-    // 生成CSV文件
-    if (format === 'csv' || format === 'both') {
-      const csvContent = generateCSVContent(inspections, departments, month);
-      const csvFileName = `7S联查评分表_${dateStr}.csv`;
-      
-      // 上传到云存储
-      const csvUploadRes = await cloud.uploadFile({
-        cloudPath: `exports/${csvFileName}`,
-        fileContent: Buffer.from(csvContent, 'utf8')
-      });
+    // 只生成Excel文件（使用exceljs生成带样式的xlsx）
+    const excelContent = await generateExcelBuffer(inspections, departments, month, date);
+    const excelFileName = `7S联查评分表_${dateStr}.xlsx`;
+    
+    // 上传到云存储
+    const excelUploadRes = await cloud.uploadFile({
+      cloudPath: `exports/${excelFileName}`,
+      fileContent: Buffer.from(excelContent)
+    });
 
-      files.push({
-        fileID: csvUploadRes.fileID,
-        fileName: csvFileName,
-        fileType: 'csv'
-      });
-    }
-
-    // 生成Excel文件（使用exceljs生成带样式的xlsx）
-    if (format === 'xlsx' || format === 'both') {
-      const excelContent = await generateExcelBuffer(inspections, departments, month);
-      const excelFileName = `7S联查评分表_${dateStr}.xlsx`;
-      
-      // 上传到云存储
-      const excelUploadRes = await cloud.uploadFile({
-        cloudPath: `exports/${excelFileName}`,
-        fileContent: Buffer.from(excelContent, 'utf8')
-      });
-
-      files.push({
-        fileID: excelUploadRes.fileID,
-        fileName: excelFileName,
-        fileType: 'xlsx'
-      });
-    }
+    files.push({
+      fileID: excelUploadRes.fileID,
+      fileName: excelFileName,
+      fileType: 'xlsx'
+    });
 
     // 生成公示榜Excel文件
     if (format === 'bulletin') {

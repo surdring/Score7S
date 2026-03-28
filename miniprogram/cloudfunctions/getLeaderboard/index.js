@@ -117,7 +117,7 @@ exports.main = async (event, context) => {
     // 黑榜：从不在红榜中的记录里，取倒数前3名
     const redIds = new Set(redList.map(r => r._id));
     const blackCandidates = rankedRecords.filter(r => 
-      r.totalScore < 70 && !redIds.has(r._id)
+      r.totalScore < 100 && !redIds.has(r._id)
     );
     // 注意：如果所有非满分记录都在红榜中，blackCandidates为空，黑榜即为空
     

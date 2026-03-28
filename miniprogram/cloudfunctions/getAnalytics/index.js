@@ -60,7 +60,7 @@ exports.main = async (event, context) => {
       .sort((a, b) => b.averageScore - a.averageScore);
 
     // 3. 问题项数据：按评分项计算平均分（越低表示扣分越严重）
-    const scoringItems = ['桌面摆放', '地面', '窗台', '文件资料', '电器设备', '办公椅', '整体印象'];
+    const scoringItems = ['地面', '桌面摆放', '文件资料', '电器设备', '办公椅', '窗台', '整体印象'];
     const itemScores = {};
     scoringItems.forEach(item => {
       itemScores[item] = [];

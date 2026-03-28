@@ -1,21 +1,21 @@
 <!--pages/score/score.wxml-->
 <view wx:if="{{!submitted}}" class="page">
-  <!-- 头部信息 -->
+  <!-- 头部信息 - 紧凑布局 -->
   <view class="header">
-    <text class="header-title">现场检查打分</text>
-    
-    <view class="form-row">
-      <view class="form-item">
-        <text class="form-label">检查日期</text>
-        <picker mode="date" value="{{date}}" bindchange="onDateChange">
-          <view class="picker-value">{{date}}</view>
-        </picker>
-      </view>
+    <view class="header-top">
+      <text class="header-title">现场检查打分</text>
+      <text class="progress-text">已评: {{scoredCount}} / 7项</text>
     </view>
-
-    <view class="form-row">
-      <view class="form-item">
-        <text class="form-label">部门</text>
+    
+    <!-- 胶囊式选择器 -->
+    <view class="capsule-row">
+      <view class="capsule-half capsule-date">
+        <view class="capsule-btn-static">
+          <text class="capsule-icon">📅</text>
+          <text class="capsule-text">{{date}}</text>
+        </view>
+      </view>
+      <view class="capsule-half">
         <picker 
           mode="selector" 
           range="{{departments}}" 
@@ -23,23 +23,35 @@
           value="{{deptIndex}}"
           bindchange="onDeptChange"
         >
-          <view class="picker-value">{{selectedDept}}</view>
+          <view class="capsule-btn">
+            <text class="capsule-icon">🏢</text>
+            <text class="capsule-text">{{selectedDept || '选择部门'}}</text>
+            <text class="capsule-arrow">▾</text>
+          </view>
         </picker>
       </view>
     </view>
-
-    <view class="form-row">
-      <view class="form-item">
-        <text class="form-label">办公室</text>
+    
+    <view class="capsule-row">
+      <view class="capsule-full">
         <picker 
           mode="selector" 
           range="{{departments[deptIndex].rooms}}" 
           value="{{roomIndex}}"
           bindchange="onRoomChange"
         >
-          <view class="picker-value">{{selectedRoom}}</view>
+          <view class="capsule-btn">
+            <text class="capsule-icon">📍</text>
+            <text class="capsule-text">{{selectedRoom || '选择办公室'}}</text>
+            <text class="capsule-arrow">▾</text>
+          </view>
         </picker>
       </view>
+    </view>
+
+    <!-- 进度条 -->
+    <view class="progress-bar">
+      <view class="progress-fill" style="width: {{scoredCount / 7 * 100}}%;"></view>
     </view>
   </view>
 
@@ -64,25 +76,59 @@
         </view>
       </view>
 
-      <!-- 分数按钮 -->
-      <view class="score-buttons">
+      <!-- 分数输入区 - 步进器+输入框 -->
+      <view class="score-input-section">
+        <view class="score-hints">
+          <text class="score-max">最高分：{{scoringMaxScores[item]}}分</text>
+        </view>
+        
+        <!-- 步进器 -->
+        <view class="stepper-container">
+          <view 
+            class="stepper-btn {{scores[item].score === null || scores[item].score <= 0 ? 'disabled' : ''}}"
+            bindtap="decreaseScore"
+            data-item="{{item}}"
+          >
+            <text class="stepper-icon">−</text>
+          </view>
+          <input
+            class="stepper-input {{scores[item].score > scoringMaxScores[item] ? 'error' : ''}}"
+            type="number"
+            placeholder="0"
+            value="{{scores[item].score}}"
+            bindinput="onScoreInput"
+            bindblur="onScoreBlur"
+            data-item="{{item}}"
+          />
+          <view 
+            class="stepper-btn {{scores[item].score !== null && scores[item].score >= scoringMaxScores[item] ? 'disabled' : ''}}"
+            bindtap="increaseScore"
+            data-item="{{item}}"
+          >
+            <text class="stepper-icon">+</text>
+          </view>
+        </view>
+      </view>
+
+      <!-- 快捷标签 -->
+      <view class="quick-tags">
         <view 
-          wx:for="{{scoreOptions}}" 
-          wx:for-item="score" 
-          wx:key="*this"
-          class="score-btn {{scores[item].score === score ? 'active' : ''}}"
-          bindtap="selectScore"
+          wx:for="{{quickTags[scoringMaxScores[item]]}}"
+          wx:for-item="tag"
+          wx:key="value"
+          class="quick-tag {{scores[item].score === tag.value ? 'active' : ''}}"
+          bindtap="onQuickTagTap"
           data-item="{{item}}"
-          data-score="{{score}}"
+          data-value="{{tag.value}}"
         >
-          {{score}}分
+          {{tag.label}}
         </view>
       </view>
 
       <!-- 备注输入 -->
       <textarea 
-        class="remark-input {{scores[item].score <= 4 && !scores[item].remark && scores[item].images.length === 0 ? 'required' : ''}}"
-        placeholder="{{scores[item].score <= 4 ? '请填写扣分原因（必填）...' : '备注说明（选填）...'}}"
+        class="remark-input {{isLowScore(item) ? 'required' : ''}}"
+        placeholder="{{isLowScore(item) ? '请填写扣分原因（必填）...' : '备注说明（选填）...'}}"
         value="{{scores[item].remark}}"
         bindinput="onRemarkInput"
         data-item="{{item}}"
@@ -128,11 +174,11 @@
 
       <!-- 低分提示 -->
       <view 
-        wx:if="{{scores[item].score <= 4 && scores[item].images.length === 0 && !scores[item].remark}}"
+        wx:if="{{isLowScore(item) && !scores[item].remark && scores[item].images.length === 0}}"
         class="warning-tip"
       >
         <text class="warning-icon">⚠</text>
-        <text>评分≤4分，必须上传照片或填写备注</text>
+        <text>评分≤{{scoringLowThresholds[item]}}分，必须上传照片或填写备注</text>
       </view>
     </view>
   </view>

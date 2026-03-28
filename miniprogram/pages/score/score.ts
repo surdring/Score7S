@@ -1,19 +1,51 @@
 // pages/score/score.ts - 评分页面
 const app = getApp();
 
-// 评分项常量（与网页端一致）
-const SCORING_ITEMS = ['桌面摆放', '地面', '窗台', '文件资料', '电器设备', '办公椅', '整体印象'];
-const SCORE_OPTIONS = [10, 8, 4, 2];
+// 评分项常量（新顺序 / 100分制）
+const SCORING_ITEMS = ['地面', '桌面摆放', '文件资料', '电器设备', '办公椅', '窗台', '整体印象'];
 
-// 评分标准配置映射表
+// 每项最高分
+const SCORING_MAX_SCORES: Record<string, number> = {
+  '地面': 20,
+  '桌面摆放': 20,
+  '文件资料': 10,
+  '电器设备': 20,
+  '办公椅': 10,
+  '窗台': 10,
+  '整体印象': 10,
+};
+
+// 低分阈值（最高分的40%）- 动态计算
+const SCORING_LOW_THRESHOLDS: Record<string, number> = {};
+for (const item of SCORING_ITEMS) {
+  SCORING_LOW_THRESHOLDS[item] = Math.floor(SCORING_MAX_SCORES[item] * 0.4);
+}
+
+// 快捷标签配置（统一百分比标准：100%/80%/60%/40%，确保第四档触发低分备注）
+const QUICK_TAGS: Record<number, Array<{ label: string; value: number }>> = {
+  20: [
+    { label: '满分', value: 20 },      // 100%
+    { label: '16良好', value: 16 },    // 80%
+    { label: '12一般', value: 12 },    // 60%
+    { label: '8较差', value: 8 },      // 40% - 等于低分阈值，触发备注
+  ],
+  10: [
+    { label: '满分', value: 10 },      // 100%
+    { label: '8良好', value: 8 },       // 80%
+    { label: '6一般', value: 6 },       // 60%
+    { label: '4较差', value: 4 },       // 40% - 等于低分阈值，触发备注
+  ],
+};
+
+// 评分标准配置映射表（提示为最高分标准）
 const SCORING_STANDARDS: Record<string, string> = {
-  '桌面摆放': '10分：整洁有序；8分：轻微杂乱；4分：明显杂乱；2分：严重混乱',
-  '地面': '10分：干净整洁；8分：少量垃圾；4分：明显脏污；2分：严重脏乱',
-  '窗台': '10分：洁净明亮；8分：轻微灰尘；4分：明显积尘；2分：严重不洁',
-  '文件资料': '10分：规范归档；8分：略有混乱；4分：明显无序；2分：严重混乱',
-  '电器设备': '10分：摆放整齐；8分：略有杂乱；4分：明显杂乱；2分：严重混乱',
-  '办公椅': '10分：归位整齐；8分：略有偏移；4分：明显杂乱；2分：严重混乱',
-  '整体印象': '10分：舒适整洁；8分：略有不足；4分：明显欠佳；2分：印象较差',
+  '地面': '地面干净整洁，无垃圾、污渍、水渍',
+  '桌面摆放': '物品摆放整齐，无私人物品，无杂物堆积',
+  '文件资料': '文件资料分类明确，标识清晰，易于查找',
+  '电器设备': '电器设备摆放整齐，无积尘，电线不杂乱',
+  '办公椅': '办公椅摆放整齐，无损坏，无污渍',
+  '窗台': '窗台无灰尘、无杂物摆放，玻璃明亮',
+  '整体印象': '办公室整体整洁有序，环境优美',
 };
 
 interface Department {
@@ -53,9 +85,12 @@ Page({
     // 评分数据
     scores: {} as Record<string, ScoreItem>,
     scoringItems: SCORING_ITEMS,
-    scoreOptions: SCORE_OPTIONS,
     scoringStandards: SCORING_STANDARDS,
+    scoringMaxScores: SCORING_MAX_SCORES,
+    scoringLowThresholds: SCORING_LOW_THRESHOLDS,
+    quickTags: QUICK_TAGS,
     totalScore: 0,
+    scoredCount: 0,
     // 提交成功
     submitted: false,
     submittedData: null as any,
@@ -128,6 +163,7 @@ Page({
     this.setData({
       scores,
       totalScore: 0,
+      scoredCount: 0,
     });
   },
 
@@ -145,6 +181,8 @@ Page({
     this.setData({
       date: today,
       scores,
+      totalScore: 0,
+      scoredCount: 0,
     });
 
     await this.loadScoredOffices(today);
@@ -303,13 +341,127 @@ Page({
     });
   },
 
-  // 选择分数
-  selectScore(e: any) {
-    const { item, score } = e.currentTarget.dataset;
+  // 计算总分
+  calculateTotal(scores?: Record<string, ScoreItem>): number {
+    const targetScores = scores || this.data.scores;
+    return Object.values(targetScores).reduce(
+      (sum, item) => sum + (Number(item.score) || 0),
+      0
+    );
+  },
+
+  // 计算已评项目数
+  calculateScoredCount(scores?: Record<string, ScoreItem>): number {
+    const targetScores = scores || this.data.scores;
+    return Object.values(targetScores).filter(
+      (item) => item.score !== null && item.score !== undefined && item.score !== ''
+    ).length;
+  },
+
+  // 判断是否为低分
+  isLowScore(item: string): boolean {
+    const score = this.data.scores[item]?.score;
+    if (score === null || score === undefined || score === '') return false;
+    return Number(score) <= SCORING_LOW_THRESHOLDS[item];
+  },
+
+  // 设置分数（公共方法）
+  setScore(item: string, score: number | null) {
+    const maxScore = SCORING_MAX_SCORES[item];
+    
+    // 边界校验
+    if (score !== null) {
+      if (score < 0) score = 0;
+      if (score > maxScore) score = maxScore;
+    }
+
     const scores = { ...this.data.scores };
     scores[item] = { ...scores[item], score };
     const totalScore = this.calculateTotal(scores);
-    this.setData({ scores, totalScore });
+    const scoredCount = this.calculateScoredCount(scores);
+    this.setData({ scores, totalScore, scoredCount });
+  },
+
+  // 增加分数
+  increaseScore(e: any) {
+    const { item } = e.currentTarget.dataset;
+    const currentScore = this.data.scores[item].score;
+    const maxScore = SCORING_MAX_SCORES[item];
+    
+    let newScore: number;
+    if (currentScore === null || currentScore === undefined || currentScore === '') {
+      newScore = maxScore; // 从满分开始
+    } else {
+      newScore = Math.min(Number(currentScore) + 1, maxScore);
+    }
+    
+    this.setScore(item, newScore);
+  },
+
+  // 减少分数
+  decreaseScore(e: any) {
+    const { item } = e.currentTarget.dataset;
+    const currentScore = this.data.scores[item].score;
+    
+    if (currentScore === null || currentScore === undefined || currentScore === '') {
+      this.setScore(item, 0);
+      return;
+    }
+    
+    const newScore = Math.max(Number(currentScore) - 1, 0);
+    this.setScore(item, newScore);
+  },
+
+  // 快捷标签点击
+  onQuickTagTap(e: any) {
+    const { item, value } = e.currentTarget.dataset;
+    this.setScore(item, Number(value));
+  },
+
+  // 输入分数
+  onScoreInput(e: any) {
+    const { item } = e.currentTarget.dataset;
+    const value = e.detail.value;
+    const score = value === '' ? null : Number(value);
+
+    if (score !== null && Number.isNaN(score)) {
+      wx.showToast({ title: '请输入有效数字', icon: 'none' });
+      return;
+    }
+
+    // 实时更新但不立即校验边界（等失焦时校验）
+    const scores = { ...this.data.scores };
+    scores[item] = { ...scores[item], score };
+    const totalScore = this.calculateTotal(scores);
+    const scoredCount = this.calculateScoredCount(scores);
+    this.setData({ scores, totalScore, scoredCount });
+  },
+
+  // 输入框失焦时校验
+  onScoreBlur(e: any) {
+    const { item } = e.currentTarget.dataset;
+    const value = e.detail.value;
+    const maxScore = SCORING_MAX_SCORES[item];
+    
+    let score = value === '' ? null : Number(value);
+    
+    if (score !== null) {
+      if (Number.isNaN(score)) {
+        this.setScore(item, null);
+        return;
+      }
+      
+      // 自动修正超出范围的值
+      if (score < 0) {
+        score = 0;
+        wx.showToast({ title: '分数不能为负数，已修正为0', icon: 'none' });
+      } else if (score > maxScore) {
+        score = maxScore;
+        wx.showToast({ title: `最高不能超过${maxScore}分，已修正`, icon: 'none' });
+      }
+    }
+    
+    this.setScore(item, score);
   },
 
   // 输入备注
@@ -387,15 +539,6 @@ Page({
     });
   },
 
-  // 计算总分
-  calculateTotal(scores?: Record<string, ScoreItem>): number {
-    const targetScores = scores || this.data.scores;
-    return Object.values(targetScores).reduce(
-      (sum, item) => sum + (Number(item.score) || 0),
-      0
-    );
-  },
-
   // 校验表单
   validateForm(): boolean {
     if (!this.data.selectedDept || !this.data.selectedRoom) {
@@ -405,6 +548,8 @@ Page({
 
     for (const item of SCORING_ITEMS) {
       const data = this.data.scores[item];
+      const maxScore = SCORING_MAX_SCORES[item];
+      const lowScoreThreshold = SCORING_LOW_THRESHOLDS[item];
       
       if (data.score === null) {
         wx.showToast({ title: `请为"${item}"打分`, icon: 'none' });
@@ -412,9 +557,15 @@ Page({
         return false;
       }
 
-      // 得分 <= 4 必须上传照片或填写备注
-      if (data.score <= 4 && data.images.length === 0 && !data.remark.trim()) {
-        wx.showToast({ title: `"${item}"得分≤4分，必须上传照片或填写备注`, icon: 'none' });
+      if (data.score > maxScore) {
+        wx.showToast({ title: `"${item}"得分不能超过${maxScore}分`, icon: 'none' });
+        this.scrollToItem(item);
+        return false;
+      }
+
+      // 得分 <= 低分阈值 必须上传照片或填写备注
+      if (data.score <= lowScoreThreshold && data.images.length === 0 && !data.remark.trim()) {
+        wx.showToast({ title: `"${item}"得分≤${lowScoreThreshold}分，必须上传照片或填写备注`, icon: 'none' });
         this.scrollToItem(item);
         return false;
       }
@@ -545,6 +696,11 @@ Page({
   continueScore() {
     this.setData({ submitted: false, submittedData: null });
     this.initForm();
+    // 滚动到页面顶部
+    wx.pageScrollTo({
+      scrollTop: 0,
+      duration: 300,
+    });
   },
 });
 

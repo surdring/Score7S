@@ -10,47 +10,114 @@
   top: 0;
   z-index: 100;
   background-color: #FFFFFF;
-  padding: 32rpx;
+  padding: 24rpx 32rpx;
   border-bottom: 2rpx solid #E5E7EB;
   box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.05);
 }
 
-.header-title {
-  display: block;
-  font-size: 36rpx;
-  font-weight: 600;
-  color: #111827;
-  margin-bottom: 24rpx;
-}
-
-.form-row {
+.header-top {
   display: flex;
-  gap: 24rpx;
+  align-items: center;
+  justify-content: space-between;
   margin-bottom: 20rpx;
 }
 
-.form-row:last-child {
-  margin-bottom: 0;
+.header-title {
+  font-size: 32rpx;
+  font-weight: 600;
+  color: #111827;
 }
 
-.form-item {
-  flex: 1;
-}
-
-.form-label {
-  display: block;
+.progress-text {
   font-size: 24rpx;
-  color: #6B7280;
+  color: #3B82F6;
+  font-weight: 500;
+}
+
+/* 胶囊式选择器 */
+.capsule-row {
+  display: flex;
+  gap: 16rpx;
   margin-bottom: 12rpx;
 }
 
-.picker-value {
+.capsule-row:last-child {
+  margin-bottom: 0;
+}
+
+.capsule-half {
+  flex: 1;
+  min-width: 0;
+}
+
+.capsule-full {
+  flex: 1;
+}
+
+.capsule-btn {
+  display: flex;
+  align-items: center;
+  gap: 8rpx;
+  background-color: #F3F4F6;
+  border-radius: 32rpx;
+  padding: 16rpx 20rpx;
+  transition: all 0.2s;
+}
+
+.capsule-btn:active {
+  background-color: #E5E7EB;
+  transform: scale(0.98);
+}
+
+.capsule-btn-static {
+  display: flex;
+  align-items: center;
+  gap: 8rpx;
   background-color: #F9FAFB;
-  border: 2rpx solid #E5E7EB;
-  border-radius: 12rpx;
-  padding: 20rpx 24rpx;
+  border-radius: 32rpx;
+  padding: 16rpx 20rpx;
+}
+
+.capsule-date .capsule-btn-static {
+  border: 1rpx solid #E5E7EB;
+}
+
+.capsule-icon {
+  font-size: 28rpx;
+  flex-shrink: 0;
+}
+
+.capsule-text {
+  flex: 1;
   font-size: 28rpx;
   color: #111827;
+  font-weight: 500;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.capsule-arrow {
+  font-size: 24rpx;
+  color: #9CA3AF;
+  flex-shrink: 0;
+  margin-left: 4rpx;
+}
+
+/* 进度条 */
+.progress-bar {
+  height: 6rpx;
+  background-color: #E5E7EB;
+  border-radius: 3rpx;
+  margin-top: 20rpx;
+  overflow: hidden;
+}
+
+.progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #3B82F6, #60A5FA);
+  border-radius: 3rpx;
+  transition: width 0.3s ease;
 }
 
 /* 评分列表 */
@@ -105,34 +172,111 @@
   line-height: 1.4;
 }
 
-/* 分数按钮 */
-.score-buttons {
+/* 分数输入区 */
+.score-input-section {
   display: flex;
-  gap: 16rpx;
-  margin-bottom: 24rpx;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 20rpx;
 }
 
-.score-btn {
+.score-hints {
   flex: 1;
+}
+
+.score-max {
+  display: block;
+  font-size: 24rpx;
+  color: #6B7280;
+  font-weight: 500;
+}
+
+/* 步进器 */
+.stepper-container {
+  display: flex;
+  align-items: center;
+  gap: 8rpx;
+}
+
+.stepper-btn {
+  width: 72rpx;
   height: 72rpx;
   display: flex;
   align-items: center;
   justify-content: center;
+  background-color: #F3F4F6;
+  border-radius: 12rpx;
+  transition: all 0.2s;
+}
+
+.stepper-btn:active {
+  background-color: #E5E7EB;
+  transform: scale(0.95);
+}
+
+.stepper-btn.disabled {
+  background-color: #F9FAFB;
+  opacity: 0.4;
+}
+
+.stepper-icon {
+  font-size: 32rpx;
+  color: #374151;
+  font-weight: 600;
+  line-height: 1;
+}
+
+.stepper-input {
+  width: 100rpx;
+  height: 72rpx;
+  padding: 0 12rpx;
   background-color: #F9FAFB;
   border: 2rpx solid #E5E7EB;
   border-radius: 12rpx;
-  font-size: 28rpx;
-  color: #6B7280;
+  font-size: 36rpx;
+  font-weight: 600;
+  color: #111827;
+  text-align: center;
+  box-sizing: border-box;
 }
 
-.score-btn.active {
-  background: linear-gradient(135deg, #3B82F6 0%, #2563EB 100%);
+.stepper-input:focus {
   border-color: #3B82F6;
-  color: #FFFFFF;
-  font-weight: 600;
-  transform: scale(1.05);
-  box-shadow: 0 4rpx 16rpx rgba(59, 130, 246, 0.4);
-  transition: all 0.2s ease;
+  background-color: #FFFFFF;
+}
+
+.stepper-input.error {
+  border-color: #EF4444;
+  background-color: #FEF2F2;
+  color: #DC2626;
+}
+
+/* 快捷标签 */
+.quick-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12rpx;
+  margin-bottom: 20rpx;
+}
+
+.quick-tag {
+  padding: 12rpx 20rpx;
+  background-color: #F3F4F6;
+  border-radius: 8rpx;
+  font-size: 24rpx;
+  color: #4B5563;
+  transition: all 0.2s;
+}
+
+.quick-tag:active {
+  background-color: #E5E7EB;
+  transform: scale(0.98);
+}
+
+.quick-tag.active {
+  background-color: #DBEAFE;
+  color: #3B82F6;
+  font-weight: 500;
 }
 
 /* 备注输入 */
@@ -148,11 +292,17 @@
   color: #111827;
   margin-bottom: 20rpx;
   box-sizing: border-box;
+  transition: all 0.2s;
 }
 
 .remark-input.required {
   border-color: #EF4444;
   background-color: #FEF2F2;
+}
+
+.remark-input.required::placeholder {
+  color: #DC2626;
+  font-weight: 500;
 }
 
 /* 必填项抖动动画 */

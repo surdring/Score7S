@@ -1,22 +1,21 @@
 // 部门管理页面
 const DEPARTMENTS_DATA = [
-  { name: '经营管控中心', rooms: ['经营管控中心（南面）1楼', '经营管控中心（北面）2楼'] },
-  { name: '供应二部', rooms: ['原料科（南屋）（1楼）', '原料科（北屋）（1楼）', '钢后科（1楼）'] },
-  { name: '供应一部', rooms: ['业务员大办公室（2楼）', '业务员小办公室（2楼）'] },
-  { name: '销售部', rooms: ['业务员办公室（3楼）', '合同管理员（3楼）', '副产品（3楼）'] },
-  { name: '人力资源部', rooms: ['招聘配置科（3楼）', '薪酬科（3楼）'] },
-  { name: '企管部', rooms: ['办公室（靠北）（4楼）'] },
-  { name: '审计监察部', rooms: ['办公室（中间与靠南）（4楼）'] },
-  { name: '财务部', rooms: ['资产科（4楼）', '结算中心（4楼）', '成本科（5楼)'] },
-  { name: '法务部', rooms: ['办公室（5楼）'] },
-  { name: '总经办', rooms: ['办公室（5楼）'] },
-  { name: '监察部', rooms: ['办公室（5楼）'] },
-  { name: '外矿部', rooms: ['办公室(5楼）'] },
-  { name: '财务部（工程楼）', rooms: ['三级账（工程部2楼）', '质计部-磅单计量（工程部2楼）', '资产科-合同租（工程部2楼）', '经营核算科北屋（工程部3楼）'] },
-  { name: '预算部（工程楼）', rooms: ['预算1（工程部2楼）', '预算2（工程部2楼）', '预算3（工程部2楼）'] },
-  { name: '公司办公室（工程楼）', rooms: ['办公室（工程部2楼）', '司机办公室（工程部2楼）', '资料室（工程部3楼东）', '文印室（工程楼1楼）'] },
-  { name: '工程审计', rooms: ['工程楼(3楼)'] },
-  { name: '工程部', rooms: ['工程部办公室（工程楼2楼）'] },
+  { name: '经营管控中心', rooms: ['经营管控中心-行政办公楼1楼', '经营管控中心-行政办公楼2楼'] },
+  { name: '供应二部', rooms: ['钢后科-行政办公楼1楼', '燃料科2-行政办公楼1楼', '燃料科3-行政办公楼1楼', '辅料科-行政办公楼2楼第一排和第二排'] },
+  { name: '供应一部', rooms: ['业务员大办公室-行政办公楼2楼第三排和第四排', '业务员小办公室-行政办公楼2楼'] },
+  { name: '销售部', rooms: ['业务员办公室-行政办公楼3楼', '合同管理员-行政办公楼3楼', '销售副产品-行政办公楼3楼和精益推进办公室在一间'] },
+  { name: '人力资源部', rooms: ['招聘配置科-行政办公楼3楼', '薪酬科-行政办公楼3楼'] },
+  { name: '企管部', rooms: ['办公室-行政办公楼4楼最北边', '精益推进办公室-行政办公楼3楼和销售副产品在一间'] },
+  { name: '审计监察部', rooms: ['办公室-行政办公楼4楼中间和最靠南位置'] },
+  { name: '财务部', rooms: ['资产科/财务二-行政办公楼4楼', '结算中心/财务三-行政办公楼4楼', '成本科/财务办公室-行政办公楼5楼'] },
+  { name: '法务部', rooms: ['办公室-行政办公楼5楼'] },
+  { name: '总经办', rooms: ['办公室-行政办公楼5楼'] },
+  { name: '监察部', rooms: ['办公室-行政办公楼5楼'] },
+  { name: '外矿部', rooms: ['办公室-行政办公楼5楼'] },
+  { name: '财务部', rooms: ['三级账2-工程部办公楼2楼', '计量科理票室-工程部办公楼2楼', '票据审核室-工程部办公楼2楼', '经营核算科-工程部办公楼3楼'] },
+  { name: '预算部', rooms: ['预算1-工程部办公楼2楼', '预算2-工程部办公楼2楼', '预算3-工程部办公楼2楼'] },
+  { name: '公司办公室', rooms: ['文印室-工程部办公楼1楼', '办公室-工程部办公楼2楼', '资料室-工程部办公楼3楼'] },
+  { name: '工程审计', rooms: ['科长办公室-工程部办公楼3楼', '科员办公室-工程部办公楼3楼'] },
 ];
 
 Page({
@@ -82,7 +81,7 @@ Page({
   async initFromLocal() {
     wx.showModal({
       title: '确认初始化',
-      content: '将从本地配置导入17个部门及其办公室，是否继续？',
+      content: '将从本地配置导入16个部门35个办公室，是否继续？',
       success: async (res) => {
         if (res.confirm) {
           wx.showLoading({ title: '导入中...' });
@@ -267,6 +266,45 @@ Page({
     const { id } = e.currentTarget.dataset;
     wx.navigateTo({
       url: `/pages/admin/rooms/rooms?departmentId=${id}`
+    });
+  },
+
+  // 清理云端所有数据
+  async clearAllCloudData() {
+    wx.showModal({
+      title: '⚠️ 危险操作',
+      content: '将删除云上所有部门、办公室和评分数据，不可恢复！确定继续？',
+      confirmColor: '#ff4444',
+      success: async (res) => {
+        if (res.confirm) {
+          wx.showLoading({ title: '正在清理...', mask: true });
+          try {
+            const result = await wx.cloud.callFunction({
+              name: 'clearAllData',
+              data: { type: 'all' }
+            }) as any;
+
+            wx.hideLoading();
+
+            if (result.result?.success) {
+              const { departments, rooms, inspections } = result.result.data;
+              wx.showModal({
+                title: '清理完成',
+                content: `已删除：\n• ${departments} 个部门\n• ${rooms} 个办公室\n• ${inspections} 条评分记录\n\n请点击"从本地配置初始化"导入新数据。`,
+                showCancel: false,
+                success: () => {
+                  this.loadDepartments();
+                }
+              });
+            } else {
+              throw new Error(result.result?.message || '清理失败');
+            }
+          } catch (err: any) {
+            wx.hideLoading();
+            wx.showToast({ title: err.message || '清理失败', icon: 'error' });
+          }
+        }
+      }
     });
   }
 });

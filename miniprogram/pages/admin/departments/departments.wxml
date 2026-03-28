@@ -4,6 +4,7 @@
   <view class="toolbar">
     <button class="btn-primary" bindtap="showAddDialog">+ 添加部门</button>
     <button class="btn-secondary" bindtap="initFromLocal">从本地初始化</button>
+    <button class="btn-danger" bindtap="clearAllCloudData">清理云端数据</button>
   </view>
 
   <!-- 部门列表 -->

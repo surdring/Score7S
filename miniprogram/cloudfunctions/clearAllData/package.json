@@ -1,0 +1,9 @@
+{
+  "name": "clearAllData",
+  "version": "1.0.0",
+  "description": "清理所有测试数据（部门、办公室、评分记录）",
+  "main": "index.js",
+  "dependencies": {
+    "wx-server-sdk": "latest"
+  }
+}

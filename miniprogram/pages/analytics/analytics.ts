@@ -10,7 +10,7 @@ Page({
     // 问题项数据
     issueData: [] as Array<{ item: string; averageScore: number }>,
     // 评分项
-    scoringItems: ['桌面摆放', '地面', '窗台', '文件资料', '电器设备', '办公椅', '整体印象'],
+    scoringItems: ['地面', '桌面摆放', '文件资料', '电器设备', '办公椅', '窗台', '整体印象'],
   },
 
   onLoad() {

@@ -33,6 +33,7 @@ Page({
     // 密码弹窗相关
     showPasswordModal: false,
     passwordInput: '' as string,
+    passwordInputFocus: false,
     passwordVerifying: false,
   },
 
@@ -119,9 +120,21 @@ Page({
       return;
     }
 
-    // 显示密码弹窗
-    this.setData({ showPasswordModal: true, passwordInput: '' });
+    // 显示密码弹窗（延迟聚焦，避免渲染冲突）
+    this.setData({ showPasswordModal: true, passwordInput: '', passwordInputFocus: false });
+    setTimeout(() => {
+      this.setData({ passwordInputFocus: true });
+    }, 100);
   },
+
+  // 阻止滚动穿透
+  preventTouchMove() {},
+
+  // 阻止事件冒泡
+  preventBubble() {},
+
+  // 拦截输入框点击事件
+  onInputTap() {},
 
   // 密码输入
   onPasswordInput(e: any) {
@@ -130,7 +143,7 @@ Page({
 
   // 取消密码弹窗
   cancelPasswordModal() {
-    this.setData({ showPasswordModal: false, passwordInput: '' });
+    this.setData({ showPasswordModal: false, passwordInput: '', passwordInputFocus: false });
   },
 
   // 确认密码
