@@ -1,0 +1,9 @@
+{
+  "name": "submitInspection",
+  "version": "1.0.0",
+  "description": "提交评分，实现重复评分覆盖逻辑",
+  "main": "index.js",
+  "dependencies": {
+    "wx-server-sdk": "latest"
+  }
+}

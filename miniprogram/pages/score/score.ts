@@ -614,21 +614,32 @@ Page({
         remark: this.data.scores[item].remark,
       }));
 
-      const inspectionData = {
-        date: this.data.date,
-        checkerId: app.globalData.userInfo?.nickName || '匿名检查员',
-        checkerName: app.globalData.userInfo?.nickName || '匿名检查员',
-        department: this.data.selectedDept,
-        room: this.data.selectedRoom,
-        totalScore: this.calculateTotal(),
-        details,
-        createdAt: new Date(),
-      };
+      // 调用云函数提交评分（实现覆盖逻辑）
+      const res = await wx.cloud.callFunction({
+        name: 'submitInspection',
+        data: {
+          date: this.data.date,
+          checkerId: app.globalData.userInfo?.nickName || '匿名检查员',
+          checkerName: app.globalData.userInfo?.nickName || '匿名检查员',
+          department: this.data.selectedDept,
+          room: this.data.selectedRoom,
+          totalScore: this.calculateTotal(),
+          details,
+        }
+      }) as any;
 
-      const db = wx.cloud.database();
-      const res = await db.collection('inspections').add({
-        data: inspectionData,
-      });
+      if (!res.result?.success) {
+        throw new Error(res.result?.message || '提交失败');
+      }
+
+      // 如果覆盖已有评分，显示提示
+      if (res.result?.isOverwrite) {
+        wx.showToast({ 
+          title: '评分已更新', 
+          icon: 'success',
+          duration: 2000 
+        });
+      }
 
       // 记录为已评分（用于同部门自动切换与重复提交提醒）
       const newKey = this.makeScoredOfficeKey(this.data.selectedDept, this.data.selectedRoom);
@@ -640,8 +651,15 @@ Page({
       this.setData({
         submitted: true,
         submittedData: {
-          _id: res._id,
-          ...inspectionData,
+          _id: res.result._id,
+          date: this.data.date,
+          checkerId: app.globalData.userInfo?.nickName || '匿名检查员',
+          checkerName: app.globalData.userInfo?.nickName || '匿名检查员',
+          department: this.data.selectedDept,
+          room: this.data.selectedRoom,
+          totalScore: this.calculateTotal(),
+          details,
+          createdAt: new Date(),
         },
         submitting: false,
       });

@@ -227,36 +227,13 @@ async function generateExcelBuffer(inspections, departments, month, selectedDate
     worksheet.getCell(ref).border = thinBorder;
   });
 
-  // 按部门、办公室、日期分组
+  // 按部门、办公室分组（不包含日期，与首页保持一致）
   const groupedMap = new Map();
   inspections.forEach(record => {
-    const recordDate = record.date || '';
-    const key = `${record.department}-${record.room}-${recordDate}`;
-    if (!groupedMap.has(key)) {
-      groupedMap.set(key, { 
-        department: record.department,
-        room: record.room,
-        details: {}, 
-        date: recordDate, 
-        createdAt: record.createdAt || null 
-      });
-    }
-    const group = groupedMap.get(key);
-    const toMillis = (v) => {
-      if (!v) return 0;
-      if (typeof v === 'number') return v;
-      if (v instanceof Date) return v.getTime();
-      if (typeof v === 'object' && v.$date) return new Date(v.$date).getTime();
-      if (typeof v === 'object' && typeof v.seconds === 'number') return v.seconds * 1000;
-      return 0;
-    };
-    const shouldReplace = toMillis(record.createdAt) >= toMillis(group.createdAt);
-    if (shouldReplace) {
-      group.createdAt = record.createdAt || null;
-      group.details = {};
-      (record.details || []).forEach(d => {
-        group.details[d.item] = d.score;
-      });
+    const key = `${record.department}-${record.room}`;
+    // 只保留该办公室的最高分记录
+    if (!groupedMap.has(key) || groupedMap.get(key).totalScore < record.totalScore) {
+      groupedMap.set(key, record);
     }
   });
 
@@ -283,10 +260,11 @@ async function generateExcelBuffer(inspections, departments, month, selectedDate
   } else {
     // 退回到从检查记录中提取（兼容旧数据）
     deptRoomsMap = new Map();
-    groupedMap.forEach((data, key) => {
+    groupedMap.forEach((record, key) => {
+      // key 格式现在是 "部门-房间"
       const parts = String(key).split('-');
       const deptName = parts[0];
-      const room = parts.slice(1, parts.length - 1).join('-');
+      const room = parts.slice(1).join('-');
       
       if (!deptRoomsMap.has(deptName)) {
         deptRoomsMap.set(deptName, []);
@@ -309,18 +287,21 @@ async function generateExcelBuffer(inspections, departments, month, selectedDate
       const rooms = deptRoomsMap.get(deptName).sort();
       
       rooms.forEach(room => {
-        const dataKey = `${deptName}-${room}-${date}`;
-        const data = groupedMap.get(dataKey);
+        // key 格式现在是 "部门-房间"，不包含日期
+        const dataKey = `${deptName}-${room}`;
+        const record = groupedMap.get(dataKey);
         
         // 即使该办公室当天无记录，也输出一行（显示为空）
         const row = worksheet.getRow(currentRow);
         const rowValues = [deptName, room];
-        let totalScore = 0;
         
-        if (data) {
+        if (record) {
+          // 直接使用record中的totalScore
+          const totalScore = record.totalScore || 0;
+          // 从details数组中获取各评分项分数
+          const detailsMap = new Map((record.details || []).map(d => [d.item, d.score]));
           SCORING_ITEMS.forEach(item => {
-            const score = data.details?.[item.name] || 0;
-            totalScore += score;
+            const score = detailsMap.get(item.name) || 0;
             rowValues.push(score > 0 ? score : '');
           });
           rowValues.push(totalScore > 0 ? totalScore : '');
@@ -386,21 +367,19 @@ async function generateExcelBuffer(inspections, departments, month, selectedDate
 
   // 计算每个办公室的最新评分（基于实际记录，避免模板与数据库名称不一致导致空榜）
   const officeLatestMap = new Map();
-  groupedMap.forEach((data, dataKey) => {
-    // 从data对象中获取部门和办公室信息，而不是解析dataKey字符串
-    const dept = data.department;
-    const room = data.room;
-    const date = data.date;
-
-    let totalScore = 0;
-    SCORING_ITEMS.forEach(item => {
-      totalScore += data.details?.[item.name] || 0;
-    });
+  groupedMap.forEach((record, dataKey) => {
+    // 从record对象中获取部门和办公室信息
+    const dept = record.department;
+    const room = record.room;
+    const recordDate = record.date || '';
+    // 直接使用record中的totalScore
+    const totalScore = record.totalScore || 0;
 
     const key = `${dept}|${room}`;
     const prev = officeLatestMap.get(key);
-    if (!prev || String(date).localeCompare(String(prev.date)) > 0) {
-      officeLatestMap.set(key, { department: dept, room, score: totalScore, date });
+    // 如果没有前一个记录，则添加
+    if (!prev) {
+      officeLatestMap.set(key, { department: dept, room, score: totalScore, date: recordDate });
     }
   });
 
@@ -854,12 +833,14 @@ async function generateBulletinBuffer(inspections, selectedDate) {
   const groupedRecords = Array.from(groupedMap.values());
   groupedRecords.sort((a, b) => b.totalScore - a.totalScore);
 
-  // 计算并列排名
+  // 计算并列排名（使用密集排名：1,1,2,2,3...，与首页保持一致）
   const rankedRecords = [];
-  let currentRank = 1;
-  groupedRecords.forEach((record, index) => {
-    if (index > 0 && record.totalScore !== groupedRecords[index - 1].totalScore) {
-      currentRank = index + 1;
+  let currentRank = 0;
+  let lastScore = null;
+  groupedRecords.forEach((record) => {
+    if (lastScore === null || record.totalScore !== lastScore) {
+      currentRank += 1;
+      lastScore = record.totalScore;
     }
     rankedRecords.push({ ...record, rank: currentRank });
   });
@@ -874,12 +855,14 @@ async function generateBulletinBuffer(inspections, selectedDate) {
   );
   // 注意：如果所有非满分记录都在红榜中，blackCandidates为空，黑榜即为空
 
-  // 计算倒数排名并取倒数前3名
+  // 计算倒数排名（使用密集排名，与首页保持一致）
   const reverseRankedRecords = [];
-  let currentReverseRank = 1;
-  blackCandidates.forEach((record, index) => {
-    if (index > 0 && record.totalScore !== blackCandidates[index - 1].totalScore) {
-      currentReverseRank = index + 1;
+  let currentReverseRank = 0;
+  let lastReverseScore = null;
+  blackCandidates.forEach((record) => {
+    if (lastReverseScore === null || record.totalScore !== lastReverseScore) {
+      currentReverseRank += 1;
+      lastReverseScore = record.totalScore;
     }
     reverseRankedRecords.push({ ...record, reverseRank: currentReverseRank });
   });
