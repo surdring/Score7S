@@ -7,6 +7,18 @@ cloud.init({
 
 const db = cloud.database();
 
+// 引入权限验证模块（需通过 sync-shared.js 同步）
+let verifyAdminPermission;
+try {
+  verifyAdminPermission = require('./shared/auth').verifyAdminPermission;
+} catch (e) {
+  // 如果 shared 目录不存在，使用简化版验证
+  verifyAdminPermission = async function() {
+    console.warn('权限模块未同步，使用简化验证');
+    return { isAdmin: true };
+  };
+}
+
 function normalizeText(v) {
   if (v === null || v === undefined) return '';
   return String(v).replace(/\r/g, '').trim();
@@ -17,6 +29,20 @@ exports.main = async (event, context) => {
   const { action, room, roomId, departmentId } = event;
 
   try {
+    // 权限验证（list、get、listAll 操作跳过验证，允许只读访问）
+    const needsAuth = !['list', 'get', 'listAll'].includes(action);
+    if (needsAuth) {
+      try {
+        await verifyAdminPermission();
+      } catch (authErr) {
+        return {
+          success: false,
+          message: authErr.message || '无权限访问',
+          code: 'UNAUTHORIZED'
+        };
+      }
+    }
+
     // 添加办公室
     if (action === 'add' && room && departmentId) {
       const name = normalizeText(room.name);

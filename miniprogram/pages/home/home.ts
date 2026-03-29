@@ -1,4 +1,5 @@
 // pages/home/home.ts - 首页（红黑榜）
+import { SCORING_MAX_SCORES } from '../../config/scoring';
 
 interface Inspection {
   _id: string;
@@ -15,17 +16,6 @@ interface Inspection {
   }>;
 }
 
-// 评分项满分映射（与评分页保持一致）
-const HOME_SCORING_MAX_SCORES: Record<string, number> = {
-  '地面': 20,
-  '桌面摆放': 20,
-  '文件资料': 10,
-  '电器设备': 20,
-  '办公椅': 10,
-  '窗台': 10,
-  '整体印象': 10,
-};
-
 type DeductionItem = {
   item: string;
   score: number;
@@ -39,7 +29,7 @@ type DeductionItem = {
 function buildDeductionItems(details: Inspection['details']): DeductionItem[] {
   return details
     .map((d) => {
-      const maxScore = HOME_SCORING_MAX_SCORES[d.item] ?? 10;
+      const maxScore = SCORING_MAX_SCORES[d.item] ?? 10;
       const safeScore = typeof d.score === 'number' ? d.score : Number(d.score);
       const diff = Math.max(0, maxScore - safeScore);
 
@@ -86,6 +76,9 @@ Page({
     passwordInput: '' as string,
     passwordInputFocus: false,
     passwordVerifying: false,
+    // 缓存相关
+    cacheKey: 'home_leaderboard_cache',
+    cacheDuration: 5 * 60 * 1000, // 5 分钟缓存
   },
 
   onLoad() {
@@ -93,12 +86,40 @@ Page({
   },
 
   onShow() {
-    // 每次显示时刷新数据
-    this.loadAvailableDates();
+    // 检查缓存是否有效
+    this.checkCacheAndLoad();
+  },
+
+  // 检查缓存并加载数据
+  checkCacheAndLoad() {
+    const now = Date.now();
+    const cache = wx.getStorageSync(this.data.cacheKey);
+    const selectedDate = this.data.selectedDate;
+    
+    // 检查缓存是否有效（有数据、未过期、日期匹配）
+    if (cache && cache.data && (now - cache.timestamp) < this.data.cacheDuration && cache.date === selectedDate) {
+      // 使用缓存数据
+      this.setData({
+        redList: cache.data.redList,
+        blackList: cache.data.blackList,
+        lastUpdateTime: cache.data.lastUpdateTime,
+        loading: false
+      });
+      
+      // 后台静默刷新（不显示 loading）
+      this.loadAvailableDates(false);
+    } else {
+      // 缓存失效或不存在，重新加载
+      this.loadAvailableDates(true);
+    }
   },
 
   // 加载可用日期列表
-  async loadAvailableDates() {
+  async loadAvailableDates(showLoading = true) {
+    if (showLoading) {
+      this.setData({ loading: true });
+    }
+    
     try {
       const res = await wx.cloud.callFunction({
         name: 'getInspectionDates',
@@ -113,20 +134,24 @@ Page({
           latestDate,
           selectedDate: latestDate,
         });
-        this.loadRankings(latestDate);
+        this.loadRankings(latestDate, showLoading);
       } else {
         this.setData({ loading: false });
       }
     } catch (err) {
       console.error('获取日期列表失败', err);
       this.setData({ loading: false });
-      wx.showToast({ title: '加载日期失败', icon: 'error' });
+      if (showLoading) {
+        wx.showToast({ title: '加载日期失败', icon: 'error' });
+      }
     }
   },
 
   // 加载红黑榜数据
-  async loadRankings(date?: string) {
-    this.setData({ loading: true });
+  async loadRankings(date?: string, showLoading = true) {
+    if (showLoading) {
+      this.setData({ loading: true });
+    }
 
     const targetDate = date || this.data.selectedDate;
 
@@ -139,10 +164,23 @@ Page({
 
       if (res.result) {
         const queryDate = res.result.date || targetDate;
-        this.setData({
+        const cacheData = {
           redList: res.result.redList || [],
           blackList: res.result.blackList || [],
           lastUpdateTime: queryDate,
+        };
+        
+        // 更新缓存
+        wx.setStorageSync(this.data.cacheKey, {
+          data: cacheData,
+          date: queryDate,
+          timestamp: Date.now()
+        });
+        
+        this.setData({
+          redList: cacheData.redList,
+          blackList: cacheData.blackList,
+          lastUpdateTime: cacheData.lastUpdateTime,
           selectedDate: queryDate,
           loading: false,
         });
@@ -150,7 +188,20 @@ Page({
     } catch (err) {
       console.error('获取排行榜失败', err);
       this.setData({ loading: false });
-      wx.showToast({ title: '加载失败', icon: 'error' });
+      
+      // 如果有缓存，降级使用缓存
+      const cache = wx.getStorageSync(this.data.cacheKey);
+      if (cache && cache.data) {
+        this.setData({
+          redList: cache.data.redList,
+          blackList: cache.data.blackList,
+          lastUpdateTime: cache.data.lastUpdateTime
+        });
+      }
+      
+      if (showLoading) {
+        wx.showToast({ title: '加载失败', icon: 'error' });
+      }
     }
   },
 

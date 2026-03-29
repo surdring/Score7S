@@ -1,4 +1,4 @@
-<!--pages/analytics/analytics.wxml-->
+<!--pages/analytics/analytics.wxml - 7S管理分析仪表盘-->
 <view class="container">
   <!-- 加载状态 -->
   <view wx:if="{{loading}}" class="loading">
@@ -14,81 +14,106 @@
 
   <!-- 有数据 -->
   <view wx:else class="charts-container">
-    <!-- 整体趋势 -->
+    <!-- ========== 1. 全局健康概览（KPI 卡片）========== -->
+    <view class="health-overview">
+      <view class="overview-title">全局健康概览</view>
+      <view class="kpi-grid">
+        <view class="kpi-card">
+          <view class="kpi-icon">🎯</view>
+          <view class="kpi-value">{{healthOverview.overallAverage}}</view>
+          <view class="kpi-label">综合均分</view>
+        </view>
+        <view class="kpi-card">
+          <view class="kpi-icon">✅</view>
+          <view class="kpi-value">{{healthOverview.passRate}}%</view>
+          <view class="kpi-label">达标率</view>
+        </view>
+        <view class="kpi-card {{healthOverview.weekOverWeekChange > 0 ? 'positive' : (healthOverview.weekOverWeekChange < 0 ? 'negative' : 'neutral')}}">
+          <view class="kpi-icon">{{healthOverview.weekOverWeekChange > 0 ? '📈' : (healthOverview.weekOverWeekChange < 0 ? '📉' : '➖')}}</view>
+          <view class="kpi-value">
+            <text class="trend-arrow">{{healthOverview.weekOverWeekChange > 0 ? '↑' : (healthOverview.weekOverWeekChange < 0 ? '↓' : '')}}</text>
+            {{healthOverview.weekOverWeekChange > 0 ? '+' : ''}}{{healthOverview.weekOverWeekChange}}%
+          </view>
+          <view class="kpi-label">环比变化</view>
+        </view>
+        <view class="kpi-card">
+          <view class="kpi-icon">📅</view>
+          <view class="kpi-value">{{healthOverview.totalInspections}}</view>
+          <view class="kpi-label">检查天数</view>
+        </view>
+      </view>
+    </view>
+
+    <!-- ========== 2. 异常穿透（提前至概览下方）========== -->
+    <view class="chart-card exception-card" wx:if="{{unqualifiedOffices.length > 0}}">
+      <view class="chart-header" bindtap="toggleExceptionList">
+        <text class="chart-icon">⚠️</text>
+        <view class="chart-accent"></view>
+        <text class="chart-title">异常穿透</text>
+        <view class="exception-badge">{{unqualifiedOffices.length}}</view>
+        <text class="toggle-arrow {{showExceptionList ? 'expanded' : ''}}">▼</text>
+      </view>
+      <view class="exception-summary">
+        本周期有 <text class="highlight">{{unqualifiedOffices.length}}</text> 个办公室未达标
+      </view>
+      <view class="exception-list {{showExceptionList ? 'show' : ''}}" wx:if="{{showExceptionList}}">
+        <view wx:for="{{unqualifiedOffices}}" wx:key="room" class="exception-item">
+          <view class="exception-info">
+            <text class="exception-dept">{{item.department}}</text>
+            <text class="exception-room">{{item.room}}</text>
+          </view>
+          <view class="exception-score" style="color: {{item.totalScore < 60 ? '#EF4444' : '#F59E0B'}}">
+            <text class="score-value">{{item.totalScore}}</text>
+            <text class="score-unit">分</text>
+          </view>
+        </view>
+      </view>
+    </view>
+
+    <!-- ========== 3. 帕累托分析：扣分 Top 3 ========== -->
+    <view class="chart-card">
+      <view class="chart-header">
+        <text class="chart-icon">📊</text>
+        <view class="chart-accent"></view>
+        <text class="chart-title">帕累托分析：扣分分布</text>
+      </view>
+      <view class="canvas-container">
+        <canvas type="2d" id="paretoChart" class="echarts-canvas"></canvas>
+      </view>
+      <view class="insight-card" wx:if="{{paretoInsight}}">
+        <text class="insight-icon">🎯</text>
+        <view class="insight-content">
+          <text class="insight-title">优化建议</text>
+          <text class="insight-text">{{paretoInsight}}</text>
+        </view>
+      </view>
+    </view>
+
+    <!-- ========== 4. 动态趋势稳定性分析 ========== -->
     <view class="chart-card">
       <view class="chart-header">
         <text class="chart-icon">📈</text>
-        <text class="chart-title">整体趋势（平均分）</text>
-      </view>
-      <view class="chart-body">
-        <!-- 简化的趋势展示（小程序建议使用 ECharts 组件，这里先用列表展示） -->
-        <view class="trend-list">
-          <view wx:for="{{trendData}}" wx:key="date" class="trend-item">
-            <text class="trend-date">{{item.date}}</text>
-            <view class="trend-bar-container">
-              <view class="trend-bar" style="width: {{item.averageScore / 70 * 100}}%"></view>
-            </view>
-            <text class="trend-score">{{item.averageScore}}分</text>
-          </view>
+        <view class="chart-accent"></view>
+        <text class="chart-title">全公司 7S 综合平均分趋势</text>
+        <view class="time-filter" bindtap="showTimeFilter">
+          <text class="filter-text">{{timeRangeText}}</text>
+          <text class="filter-arrow">▼</text>
         </view>
       </view>
-    </view>
-
-    <!-- 部门对比 -->
-    <view class="chart-card">
-      <view class="chart-header">
-        <text class="chart-icon">🏢</text>
-        <text class="chart-title">各部门平均分对比</text>
+      <view class="chart-body line-container">
+        <canvas type="2d" id="lineChart" class="ec-canvas"></canvas>
       </view>
-      <view class="chart-body">
-        <view class="dept-list">
-          <view wx:for="{{deptData}}" wx:key="department" class="dept-item">
-            <text class="dept-name">{{item.department}}</text>
-            <view class="dept-bar-container">
-              <view class="dept-bar" style="width: {{item.averageScore / 70 * 100}}%"></view>
-            </view>
-            <text class="dept-score">{{item.averageScore}}分</text>
-          </view>
+      <view class="data-note" wx:if="{{inspectionCount > 0}}">
+        * 以上分数为本周期内 {{inspectionCount}} 次例行检查的平均值
+      </view>
+      
+      <!-- 趋势解读卡片 -->
+      <view class="insight-card trend-insight-card" wx:if="{{trendInsight}}">
+        <text class="insight-icon">💡</text>
+        <view class="insight-content">
+          <text class="insight-title">趋势解读</text>
+          <text class="insight-text">{{trendInsight}}</text>
         </view>
-      </view>
-    </view>
-
-    <!-- 扣分重灾区 -->
-    <view class="chart-card">
-      <view class="chart-header">
-        <text class="chart-icon">⚠️</text>
-        <text class="chart-title">扣分重灾区（单项平均分）</text>
-      </view>
-      <view class="chart-body">
-        <view class="issue-list">
-          <view 
-            wx:for="{{issueData}}" 
-            wx:key="item" 
-            class="issue-item"
-          >
-            <text class="issue-name">{{item.item}}</text>
-            <view class="issue-bar-container">
-              <view class="issue-bar {{item.averageScore <= 6 ? 'danger' : ''}}" style="width: {{item.averageScore / 10 * 100}}%"></view>
-            </view>
-            <text class="issue-score">{{item.averageScore}}分</text>
-          </view>
-        </view>
-      </view>
-    </view>
-
-    <!-- 快速统计 -->
-    <view class="stats-card">
-      <view class="stat-item">
-        <text class="stat-value">{{trendData.length}}</text>
-        <text class="stat-label">检查天数</text>
-      </view>
-      <view class="stat-item">
-        <text class="stat-value">{{deptData.length}}</text>
-        <text class="stat-label">参与部门</text>
-      </view>
-      <view class="stat-item">
-        <text class="stat-value">{{issueData.length > 0 ? issueData[0].item : '-'}}</text>
-        <text class="stat-label">最弱项</text>
       </view>
     </view>
   </view>

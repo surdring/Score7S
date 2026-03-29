@@ -8,19 +8,9 @@ cloud.init({
 
 const db = cloud.database();
 
-// 评分项配置 - 与 score.ts 保持一致（字符串数组转对象格式便于导出使用）
-const SCORING_ITEM_NAMES = ['地面', '桌面摆放', '文件资料', '电器设备', '办公椅', '窗台', '整体印象'];
-
-// 评分项最高分配置（与score.ts一致）
-const SCORING_MAX_SCORES = {
-  '地面': 20,
-  '桌面摆放': 20,
-  '文件资料': 10,
-  '电器设备': 20,
-  '办公椅': 10,
-  '窗台': 10,
-  '整体印象': 10,
-};
+// 引入公共模块
+const { calculateLeaderboard, groupByDepartmentAndRoom } = require('./shared/ranking');
+const { SCORING_ITEMS: SCORING_ITEM_NAMES, SCORING_MAX_SCORES, TOTAL_MAX_SCORE } = require('./shared/constants');
 
 // 评分项完整配置（用于导出表头）
 const SCORING_ITEMS = SCORING_ITEM_NAMES.map(name => ({
@@ -822,51 +812,9 @@ async function generateBulletinBuffer(inspections, selectedDate) {
     ? inspections.filter(r => r.date === selectedDate)
     : inspections;
 
-  // 计算红黑榜（使用并列排名逻辑）
-  const groupedMap = new Map();
-  filteredInspections.forEach(record => {
-    const key = `${record.department}-${record.room}`;
-    if (!groupedMap.has(key) || groupedMap.get(key).totalScore < record.totalScore) {
-      groupedMap.set(key, record);
-    }
-  });
-  const groupedRecords = Array.from(groupedMap.values());
-  groupedRecords.sort((a, b) => b.totalScore - a.totalScore);
-
-  // 计算并列排名（使用密集排名：1,1,2,2,3...，与首页保持一致）
-  const rankedRecords = [];
-  let currentRank = 0;
-  let lastScore = null;
-  groupedRecords.forEach((record) => {
-    if (lastScore === null || record.totalScore !== lastScore) {
-      currentRank += 1;
-      lastScore = record.totalScore;
-    }
-    rankedRecords.push({ ...record, rank: currentRank });
-  });
-
-  // 红榜：取前3个排名的所有记录（无论是否存在第3名）
-  const redList = rankedRecords.filter(r => r.rank <= 3);
-
-  // 黑榜：从不在红榜且非满分的记录中选取（严格排除，无兜底）
-  const redIds = new Set(redList.map(r => r._id));
-  const blackCandidates = rankedRecords.filter(r => 
-    r.totalScore < 100 && !redIds.has(r._id)
-  );
-  // 注意：如果所有非满分记录都在红榜中，blackCandidates为空，黑榜即为空
-
-  // 计算倒数排名（使用密集排名，与首页保持一致）
-  const reverseRankedRecords = [];
-  let currentReverseRank = 0;
-  let lastReverseScore = null;
-  blackCandidates.forEach((record) => {
-    if (lastReverseScore === null || record.totalScore !== lastReverseScore) {
-      currentReverseRank += 1;
-      lastReverseScore = record.totalScore;
-    }
-    reverseRankedRecords.push({ ...record, reverseRank: currentReverseRank });
-  });
-  const blackList = reverseRankedRecords.filter(r => r.reverseRank <= 3);
+  // 计算红黑榜（使用公共模块）
+  const groupedRecords = groupByDepartmentAndRoom(filteredInspections);
+  const { redList, blackList } = calculateLeaderboard(groupedRecords, TOTAL_MAX_SCORE);
 
   let row = 1;
 
@@ -1061,25 +1009,46 @@ exports.main = async (event, context) => {
   const { month, date, keyword, format = 'both', returnContent = false } = event;
 
   try {
-    // 构建查询条件
-    let query = db.collection('inspections');
+    // 分批获取数据，避免内存溢出
+    const inspections = [];
+    const batchSize = 100;
+    let offset = 0;
     
-    if (month) {
-      query = query.where({
-        date: db.RegExp({
-          regexp: `^${month}`,
-          options: 'i'
-        })
-      });
+    // 构建基础查询条件
+    const buildQuery = () => {
+      let query = db.collection('inspections');
+      
+      if (month) {
+        query = query.where({
+          date: db.RegExp({
+            regexp: `^${month}`,
+            options: 'i'
+          })
+        });
+      }
+      return query;
+    };
+    
+    // 分批获取数据
+    while (true) {
+      const batch = await buildQuery()
+        .orderBy('date', 'desc')
+        .orderBy('createdAt', 'desc')
+        .skip(offset)
+        .limit(batchSize)
+        .get();
+      
+      if (batch.data.length === 0) break;
+      
+      inspections.push(...batch.data);
+      offset += batchSize;
+      
+      // 安全限制：最多导出 2000 条记录
+      if (inspections.length >= 2000) {
+        console.warn('导出数据达到上限 2000 条');
+        break;
+      }
     }
-
-    const inspectionsRes = await query
-      .orderBy('date', 'desc')
-      .orderBy('createdAt', 'desc')
-      .limit(1000)
-      .get();
-
-    const inspections = inspectionsRes.data;
 
     if (inspections.length === 0) {
       return {

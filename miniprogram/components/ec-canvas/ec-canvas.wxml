@@ -1,0 +1,6 @@
+<canvas
+  type="{{isUseNewCanvas ? '2d' : 'canvas'}}"
+  id="{{canvasId}}"
+  class="ec-canvas"
+  canvas-id="{{canvasId}}"
+></canvas>

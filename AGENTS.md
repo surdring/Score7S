@@ -34,6 +34,10 @@ trigger: always
 - **所有配置外部化**：云开发环境 ID、数据库集合名称等通过配置文件管理。
 - **部门数据配置**：当前部门数据（17个部门35个办公室）内嵌在 `miniprogram/data/departments.json`。
 - **环境配置**：`project.config.json` 中配置云开发环境，`.env.example` 必须完整。
+- **云函数公共模块**：微信云函数默认无法直接共享公共模块，需通过构建脚本实现代码复用。
+  - 公共代码放在 `cloudfunctions/shared/` 目录
+  - 部署前运行 `scripts/sync-shared.js` 同步到各云函数目录
+  - 各云函数通过 `require('./shared/模块名')` 引用
 
 ### 1.3 7S联查评分核心架构约束
 - **评分项定义**：7个评分项（桌面摆放、地面、窗台、文件资料、电器设备、办公椅、整体印象），每项最高10分。
@@ -98,6 +102,12 @@ trigger: always
 | `getAnalytics` | 获取统计分析数据（趋势、部门对比、问题项） |
 | `exportReport` | 导出Excel/CSV报告，含完整评分表和红黑榜 |
 | `clearAllData` | 清空所有数据（管理员功能） |
+
+### 4.2.1 云函数公共模块
+| 模块 | 路径 | 功能描述 |
+|------|------|----------|
+| `ranking.js` | `cloudfunctions/shared/ranking.js` | 红黑榜排名计算逻辑，供 getLeaderboard、exportReport 使用 |
+| `constants.js` | `cloudfunctions/shared/constants.js` | 评分项常量定义，与前端 `config/scoring.ts` 保持一致 |
 
 ### 4.3 数据库集合规范
 - **集合名称**：`inspections`

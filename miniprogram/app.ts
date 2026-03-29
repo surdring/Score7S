@@ -1,7 +1,7 @@
 // app.ts - 小程序入口文件
 App({
   globalData: {
-    userInfo: null,
+    userInfo: null as { nickName: string; avatarUrl?: string } | null,
     hasLogin: false,
     cloudEnvId: null, // 云开发环境ID，在onLaunch中初始化
     adminAuthed: false, // 管理入口密码验证状态（会话内有效）
@@ -35,19 +35,35 @@ App({
     }
   },
 
-  // 用户登录
+  // 设置用户信息（替代废弃的 wx.getUserProfile）
+  setUserInfo(userInfo: { nickName: string; avatarUrl?: string }) {
+    this.globalData.userInfo = userInfo;
+    this.globalData.hasLogin = true;
+    wx.setStorageSync('userInfo', userInfo);
+  },
+
+  // 用户登录（使用手动输入昵称方式）
+  // 注意：wx.getUserProfile 已于 2022 年后废弃，现采用用户主动填写方式
   async doLogin(): Promise<boolean> {
     try {
-      // 获取用户信息
-      const { userInfo } = await wx.getUserProfile({
-        desc: '用于完善用户资料',
+      // 弹出输入框让用户输入昵称
+      const { confirm, content } = await wx.showModal({
+        title: '设置检查员昵称',
+        editable: true,
+        placeholderText: '请输入您的昵称',
       });
       
-      this.globalData.userInfo = userInfo;
-      this.globalData.hasLogin = true;
-      wx.setStorageSync('userInfo', userInfo);
+      if (confirm && content && content.trim()) {
+        const userInfo = {
+          nickName: content.trim(),
+          avatarUrl: '',
+        };
+        
+        this.setUserInfo(userInfo);
+        return true;
+      }
       
-      return true;
+      return false;
     } catch (err) {
       console.error('登录失败', err);
       return false;

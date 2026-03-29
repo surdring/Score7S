@@ -6,6 +6,10 @@
     "dev": "echo '请使用微信开发者工具进行开发'",
     "build": "echo '请使用微信开发者工具进行构建'"
   },
+  "dependencies": {
+    "echarts": "^5.4.3",
+    "echarts-for-weixin": "^1.0.0"
+  },
   "devDependencies": {
     "miniprogram-api-typings": "^3.12.3"
   },

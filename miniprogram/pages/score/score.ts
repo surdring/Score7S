@@ -1,52 +1,14 @@
 // pages/score/score.ts - 评分页面
+import {
+  SCORING_ITEMS,
+  SCORING_MAX_SCORES,
+  SCORING_LOW_THRESHOLDS,
+  QUICK_TAGS,
+  SCORING_STANDARDS,
+} from '../../config/scoring';
+import { debounce } from '../../utils/util';
+
 const app = getApp();
-
-// 评分项常量（新顺序 / 100分制）
-const SCORING_ITEMS = ['地面', '桌面摆放', '文件资料', '电器设备', '办公椅', '窗台', '整体印象'];
-
-// 每项最高分
-const SCORING_MAX_SCORES: Record<string, number> = {
-  '地面': 20,
-  '桌面摆放': 20,
-  '文件资料': 10,
-  '电器设备': 20,
-  '办公椅': 10,
-  '窗台': 10,
-  '整体印象': 10,
-};
-
-// 低分阈值（最高分的40%）- 动态计算
-const SCORING_LOW_THRESHOLDS: Record<string, number> = {};
-for (const item of SCORING_ITEMS) {
-  SCORING_LOW_THRESHOLDS[item] = Math.floor(SCORING_MAX_SCORES[item] * 0.4);
-}
-
-// 快捷标签配置（统一百分比标准：100%/80%/60%/40%，确保第四档触发低分备注）
-const QUICK_TAGS: Record<number, Array<{ label: string; value: number }>> = {
-  20: [
-    { label: '满分', value: 20 },      // 100%
-    { label: '16良好', value: 16 },    // 80%
-    { label: '12一般', value: 12 },    // 60%
-    { label: '8较差', value: 8 },      // 40% - 等于低分阈值，触发备注
-  ],
-  10: [
-    { label: '满分', value: 10 },      // 100%
-    { label: '8良好', value: 8 },       // 80%
-    { label: '6一般', value: 6 },       // 60%
-    { label: '4较差', value: 4 },       // 40% - 等于低分阈值，触发备注
-  ],
-};
-
-// 评分标准配置映射表（提示为最高分标准）
-const SCORING_STANDARDS: Record<string, string> = {
-  '地面': '地面干净整洁，无垃圾、污渍、水渍',
-  '桌面摆放': '物品摆放整齐，无私人物品，无杂物堆积',
-  '文件资料': '文件资料分类明确，标识清晰，易于查找',
-  '电器设备': '电器设备摆放整齐，无积尘，电线不杂乱',
-  '办公椅': '办公椅摆放整齐，无损坏，无污渍',
-  '窗台': '窗台无灰尘、无杂物摆放，玻璃明亮',
-  '整体印象': '办公室整体整洁有序，环境优美',
-};
 
 interface Department {
   _id: string;
@@ -98,6 +60,13 @@ Page({
 
   onLoad() {
     this.initForm();
+    
+    // 创建防抖版本的备注更新方法（减少高频输入时的 setData 调用）
+    this.debouncedUpdateRemark = debounce((item: string, remark: string) => {
+      const scores = { ...this.data.scores };
+      scores[item] = { ...scores[item], remark };
+      this.setData({ scores });
+    }, 200);
   },
 
   makeScoredOfficeKey(dept: string, room: string): string {
@@ -464,16 +433,15 @@ Page({
     this.setScore(item, score);
   },
 
-  // 输入备注
+  // 输入备注（使用防抖减少高频输入时的 setData 调用）
   onRemarkInput(e: any) {
     const { item } = e.currentTarget.dataset;
     const remark = e.detail.value;
-    const scores = { ...this.data.scores };
-    scores[item] = { ...scores[item], remark };
-    this.setData({ scores });
+    // 使用防抖版本更新
+    (this as any).debouncedUpdateRemark(item, remark);
   },
 
-  // 选择图片
+  // 选择图片（带压缩）
   async chooseImage(e: any) {
     const { item } = e.currentTarget.dataset;
     const currentImages = this.data.scores[item].images;
@@ -486,18 +454,32 @@ Page({
     try {
       const res = await wx.chooseImage({
         count: 3 - currentImages.length,
-        sizeType: ['compressed'],
+        sizeType: ['original'], // 先选原图，后面手动压缩
         sourceType: ['album', 'camera'],
       });
 
-      // 上传到云存储
-      wx.showLoading({ title: '上传中...' });
+      wx.showLoading({ title: '压缩上传中...' });
       
-      const uploadPromises = res.tempFilePaths.map((filePath: string) => {
+      // 压缩图片后再上传
+      const uploadPromises = res.tempFilePaths.map(async (filePath: string) => {
+        // 压缩图片（质量 80%，宽度不超过 1080px）
+        let compressedPath = filePath;
+        try {
+          const compressRes = await wx.compressImage({
+            src: filePath,
+            quality: 80,
+            compressedWidth: 1080,
+          });
+          compressedPath = compressRes.tempFilePath;
+        } catch (compressErr) {
+          console.warn('图片压缩失败，使用原图', compressErr);
+          // 压缩失败则使用原图
+        }
+        
         const cloudPath = `inspections/${Date.now()}_${Math.random().toString(36).substr(2, 9)}.jpg`;
         return wx.cloud.uploadFile({
           cloudPath,
-          filePath,
+          filePath: compressedPath,
         });
       });
 

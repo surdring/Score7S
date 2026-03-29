@@ -1,4 +1,6 @@
-// pages/history/history.ts - 历史记录页面
+// pages/history/history.ts - 历史记录页面（分页优化版）
+import { SCORING_MAX_SCORES } from '../../config/scoring';
+
 Page({
   data: {
     loading: true,
@@ -12,16 +14,15 @@ Page({
     showDetail: false,
     // 导出
     exporting: false,
-    // 满分标准
-    scoringMaxScores: {
-      '地面': 20,
-      '桌面摆放': 20,
-      '文件资料': 10,
-      '电器设备': 20,
-      '办公椅': 10,
-      '窗台': 10,
-      '整体印象': 10,
-    } as Record<string, number>,
+    // 满分标准（从配置文件导入）
+    scoringMaxScores: SCORING_MAX_SCORES as Record<string, number>,
+    // 防止重复加载标记
+    _initialized: false,
+    // 分页相关
+    pageSize: 20,
+    currentPage: 1,
+    hasMore: true,
+    loadingMore: false,
   },
 
   onLoad(options: any) {
@@ -33,27 +34,57 @@ Page({
       selectedDate,
       searchKeyword,
     });
-    this.loadHistory();
+    this.loadHistory(true);
   },
 
   onShow() {
-    this.loadHistory();
+    // 仅在首次加载后才触发 onShow 重新加载
+    if (this.data._initialized) {
+      this.loadHistory(true);
+    }
   },
 
-  // 加载历史记录
-  async loadHistory() {
-    this.setData({ loading: true });
+  // 加载历史记录（支持分页）
+  async loadHistory(refresh = false) {
+    // 防止重复加载
+    if (this.data.loadingMore || (!refresh && !this.data.hasMore)) {
+      return;
+    }
+
+    this.setData({ 
+      loading: refresh,
+      loadingMore: !refresh
+    });
 
     try {
+      const { pageSize, currentPage, selectedDate } = this.data;
       const db = wx.cloud.database();
-      const res = await db.collection('inspections')
+      let query = db.collection('inspections');
+
+      // 构建查询条件
+      if (selectedDate) {
+        query = query.where({
+          date: selectedDate
+        } as any);
+      }
+
+      // 分页查询
+      const skip = (refresh ? 1 : currentPage) - 1;
+      const res = await query
         .orderBy('createdAt', 'desc')
-        .limit(100)
+        .skip(skip * pageSize)
+        .limit(pageSize)
         .get();
 
+      const newInspections = res.data;
+      
       this.setData({
-        inspections: res.data,
+        inspections: refresh ? newInspections : [...this.data.inspections, ...newInspections],
+        hasMore: newInspections.length === pageSize,
+        currentPage: refresh ? 1 : currentPage + 1,
         loading: false,
+        loadingMore: false,
+        _initialized: true,
       });
       
       // 如果没有选择日期，默认筛选最新日期
@@ -65,7 +96,7 @@ Page({
       this.applyFilter();
     } catch (err) {
       console.error('加载历史记录失败', err);
-      this.setData({ loading: false });
+      this.setData({ loading: false, loadingMore: false });
       wx.showToast({ title: '加载失败', icon: 'error' });
     }
   },
@@ -179,7 +210,6 @@ Page({
         name: 'exportReport',
         data: {
           date: this.data.selectedDate,
-          month: this.data.selectedMonth,
           keyword: this.data.searchKeyword,
           format: 'xlsx',
           returnContent: true,
@@ -271,8 +301,15 @@ Page({
 
   // 下拉刷新
   onPullDownRefresh() {
-    this.loadHistory().then(() => {
+    this.loadHistory(true).then(() => {
       wx.stopPullDownRefresh();
     });
+  },
+
+  // 上拉加载更多
+  onReachBottom() {
+    if (this.data.hasMore && !this.data.loadingMore) {
+      this.loadHistory(false);
+    }
   },
 });

@@ -1,34 +1,106 @@
-/* pages/analytics/analytics.wxss */
+/* pages/analytics/analytics.wxss - 7S管理分析仪表盘 */
 
 .container {
   padding: 32rpx;
-  padding-bottom: env(safe-area-inset-bottom);
+  padding-bottom: calc(env(safe-area-inset-bottom) + 120rpx);
+  background-color: #F8F9FA;
 }
 
-/* 头部（已隐藏） */
-.header {
-  display: none;
-}
-
-.header-title,
-.header-subtitle {
-  display: none;
-}
-
-/* 图表卡片 */
-.chart-card {
-  background-color: #FFFFFF;
+/* ========== 1. 全局健康概览 ========== */
+.health-overview {
+  background: linear-gradient(135deg, #3B82F6 0%, #6366F1 100%);
   border-radius: 24rpx;
   padding: 32rpx;
   margin-bottom: 24rpx;
-  box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.05);
+  color: #FFFFFF;
+  box-shadow: 0 8rpx 20rpx rgba(59, 130, 246, 0.3);
+}
+
+.overview-title {
+  font-size: 30rpx;
+  font-weight: 700;
+  margin-bottom: 32rpx;
+  letter-spacing: 1rpx;
+}
+
+.kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 20rpx;
+}
+
+.kpi-card {
+  text-align: left;
+  padding: 24rpx;
+  background: rgba(255, 255, 255, 0.12);
+  border-radius: 20rpx;
+  backdrop-filter: blur(10px);
+  border: 1rpx solid rgba(255, 255, 255, 0.1);
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  overflow: hidden;
+}
+
+.kpi-icon {
+  font-size: 32rpx;
+  margin-bottom: 12rpx;
+  opacity: 0.9;
+}
+
+.kpi-value {
+  font-size: 44rpx;
+  font-weight: 800;
+  font-family: 'DIN Alternate', -apple-system, BlinkMacSystemFont, sans-serif;
+  margin-bottom: 4rpx;
+  line-height: 1.2;
+}
+
+.kpi-label {
+  font-size: 22rpx;
+  opacity: 0.7;
+  font-weight: 500;
+}
+
+.kpi-card.positive .kpi-value {
+  color: #34D399;
+}
+
+.kpi-card.negative .kpi-value {
+  color: #F87171;
+}
+
+.kpi-card.neutral .kpi-value {
+  color: #D1D5DB;
+}
+
+.trend-arrow {
+  font-size: 32rpx;
+  margin-right: 4rpx;
+}
+
+/* ========== 图表卡片通用样式 ========== */
+.chart-card {
+  background-color: #FFFFFF;
+  border-radius: 24rpx;
+  padding: 28rpx;
+  margin-bottom: 24rpx;
+  box-shadow: 0 10rpx 24rpx rgba(17, 24, 39, 0.06);
+  border: 1rpx solid rgba(229, 231, 235, 0.8);
 }
 
 .chart-header {
   display: flex;
   align-items: center;
   gap: 12rpx;
-  margin-bottom: 16rpx;
+  margin-bottom: 8rpx;
+}
+
+.chart-accent {
+  width: 8rpx;
+  height: 28rpx;
+  border-radius: 8rpx;
+  background: linear-gradient(180deg, #3B82F6 0%, #6366F1 100%);
 }
 
 .chart-icon {
@@ -37,161 +109,306 @@
 
 .chart-title {
   font-size: 32rpx;
-  font-weight: 600;
+  font-weight: 700;
   color: #111827;
+  flex: 1;
 }
 
 .chart-hint {
   display: block;
   font-size: 24rpx;
-  color: #9CA3AF;
+  color: rgba(107, 114, 128, 0.85);
   margin-bottom: 16rpx;
 }
 
 .chart-body {
-  margin-top: 24rpx;
+  margin-top: 16rpx;
 }
 
-/* 趋势列表 */
-.trend-list {
+/* ========== 2. 雷达图容器（已删除）========== */
+.radar-container, .line-container, .pareto-container {
+  width: 100%;
+  height: 460rpx;
+  display: block;
+  position: relative;
+}
+
+.canvas-container {
+  width: 100%;
+  height: 460rpx;
+  display: block;
+  position: relative;
+}
+
+.ec-canvas,
+.echarts-canvas {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.insight-card {
+  margin: 20rpx 0;
+  padding: 24rpx 30rpx;
+  background: #f8fbff;
+  border-radius: 12rpx;
+  border-left: 8rpx solid #007bff;
   display: flex;
-  flex-direction: column;
-  gap: 16rpx;
+  align-items: flex-start;
+  box-shadow: 0 2rpx 10rpx rgba(0, 123, 255, 0.05);
 }
 
-.trend-item {
+.insight-icon {
+  font-size: 32rpx;
+  margin-right: 16rpx;
+  margin-top: 4rpx;
+}
+
+.insight-content {
+  flex: 1;
+}
+
+.insight-title {
+  font-size: 26rpx;
+  font-weight: bold;
+  color: #007bff;
+  margin-bottom: 8rpx;
+  display: block;
+}
+
+.insight-text {
+  font-size: 24rpx;
+  color: #4b5563;
+  line-height: 1.6;
+}
+
+.suggestion-item {
+  margin-top: 12rpx;
+  padding-top: 12rpx;
+  border-top: 1rpx dashed #d1e9ff;
+  font-style: italic;
+  color: #6b7280;
+}
+
+.pareto-container {
+  width: 100%;
+  height: 500rpx;
+}
+
+.pareto-item {
   display: flex;
   align-items: center;
   gap: 16rpx;
 }
 
-.trend-date {
-  width: 120rpx;
+.pareto-rank {
+  width: 48rpx;
+  height: 48rpx;
+  background: linear-gradient(135deg, #EF4444 0%, #F97316 100%);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #FFFFFF;
   font-size: 24rpx;
+  font-weight: 700;
+}
+
+.pareto-info {
+  flex: 1;
+}
+
+.pareto-name {
+  display: block;
+  font-size: 26rpx;
+  color: #374151;
+  margin-bottom: 8rpx;
+}
+
+.pareto-bar-container {
+  height: 16rpx;
+  background-color: #F3F4F6;
+  border-radius: 8rpx;
+  overflow: hidden;
+}
+
+.pareto-bar {
+  height: 100%;
+  background: linear-gradient(90deg, #EF4444 0%, #F97316 100%);
+  border-radius: 8rpx;
+  transition: width 0.3s ease;
+}
+
+.pareto-percent {
+  width: 80rpx;
+  text-align: right;
+  font-size: 26rpx;
+  font-weight: 600;
+  color: #EF4444;
+}
+
+.pareto-insight {
+  margin-top: 16rpx;
+  padding: 16rpx 20rpx;
+  background: linear-gradient(90deg, #FEE2E2 0%, #FEF3C7 100%);
+  border-radius: 12rpx;
+  font-size: 24rpx;
+  color: #991B1B;
+  display: flex;
+  align-items: center;
+  gap: 8rpx;
+}
+
+/* ========== 4. 趋势折线图 ========== */
+.line-container {
+  width: 100%;
+  height: 400rpx;
+}
+
+/* 时间筛选器样式 */
+.time-filter {
+  display: flex;
+  align-items: center;
+  gap: 8rpx;
+  padding: 8rpx 16rpx;
+  background-color: #F3F4F6;
+  border-radius: 24rpx;
+  margin-left: auto;
+}
+
+.filter-text {
+  font-size: 24rpx;
+  color: #3B82F6;
+  font-weight: 500;
+}
+
+.filter-arrow {
+  font-size: 20rpx;
   color: #6B7280;
 }
 
-.trend-bar-container {
-  flex: 1;
-  height: 24rpx;
-  background-color: #F3F4F6;
-  border-radius: 12rpx;
-  overflow: hidden;
-}
-
-.trend-bar {
-  height: 100%;
-  background: linear-gradient(90deg, #3B82F6 0%, #6366F1 100%);
-  border-radius: 12rpx;
-  transition: width 0.3s ease;
-}
-
-.trend-score {
-  width: 80rpx;
+/* 数据基数说明 */
+.data-note {
+  font-size: 20rpx;
+  color: #9CA3AF;
   text-align: right;
-  font-size: 24rpx;
-  font-weight: 500;
-  color: #3B82F6;
+  padding: 12rpx 0;
+  margin-top: 8rpx;
+  font-style: italic;
 }
 
-/* 部门列表 */
-.dept-list {
+/* 趋势解读卡片 */
+.trend-insight-card {
+  margin-top: 20rpx;
+  border-left-color: #10B981;
+  background: #f0fdf4;
+}
+
+.trend-insight-card .insight-title {
+  color: #10B981;
+}
+
+/* ========== 6. 异常穿透 ========== */
+.exception-card .chart-header {
+  cursor: pointer;
+}
+
+.exception-badge {
+  background-color: #EF4444;
+  color: #FFFFFF;
+  font-size: 22rpx;
+  font-weight: 600;
+  padding: 4rpx 16rpx;
+  border-radius: 20rpx;
+  margin-left: 12rpx;
+}
+
+.toggle-arrow {
+  margin-left: auto;
+  font-size: 20rpx;
+  color: #9CA3AF;
+  transition: transform 0.3s ease;
+}
+
+.toggle-arrow.expanded {
+  transform: rotate(180deg);
+}
+
+.exception-summary {
+  padding: 16rpx 20rpx;
+  background-color: #FEF2F2;
+  border-radius: 12rpx;
+  font-size: 26rpx;
+  color: #374151;
+  margin-bottom: 16rpx;
+}
+
+.exception-summary .highlight {
+  color: #EF4444;
+  font-weight: 700;
+}
+
+.exception-list {
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.3s ease;
+}
+
+.exception-list.show {
+  max-height: 1000rpx;
+}
+
+.exception-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16rpx 20rpx;
+  background-color: #F9FAFB;
+  border-radius: 12rpx;
+  margin-bottom: 12rpx;
+}
+
+.exception-info {
   display: flex;
   flex-direction: column;
-  gap: 16rpx;
+  gap: 4rpx;
 }
 
-.dept-item {
-  display: flex;
-  align-items: center;
-  gap: 16rpx;
+.exception-dept {
+  font-size: 22rpx;
+  color: #6B7280;
 }
 
-.dept-name {
-  width: 180rpx;
-  font-size: 24rpx;
+.exception-room {
+  font-size: 26rpx;
   color: #374151;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.dept-bar-container {
-  flex: 1;
-  height: 24rpx;
-  background-color: #F3F4F6;
-  border-radius: 12rpx;
-  overflow: hidden;
-}
-
-.dept-bar {
-  height: 100%;
-  background: linear-gradient(90deg, #6366F1 0%, #8B5CF6 100%);
-  border-radius: 12rpx;
-  transition: width 0.3s ease;
-}
-
-.dept-score {
-  width: 80rpx;
-  text-align: right;
-  font-size: 24rpx;
   font-weight: 500;
-  color: #6366F1;
 }
 
-/* 问题项列表 */
-.issue-list {
+.exception-score {
   display: flex;
-  flex-direction: column;
-  gap: 16rpx;
+  align-items: baseline;
+  gap: 4rpx;
 }
 
-.issue-item {
-  display: flex;
-  align-items: center;
-  gap: 16rpx;
+.exception-score .score-value {
+  font-size: 36rpx;
+  font-weight: 700;
+  color: #EF4444;
 }
 
-.issue-name {
-  width: 140rpx;
-  font-size: 24rpx;
-  color: #374151;
+.exception-score .score-unit {
+  font-size: 22rpx;
+  color: #9CA3AF;
 }
 
-.issue-bar-container {
-  flex: 1;
-  height: 24rpx;
-  background-color: #F3F4F6;
-  border-radius: 12rpx;
-  overflow: hidden;
-}
-
-.issue-bar {
-  height: 100%;
-  background: linear-gradient(90deg, #F97316 0%, #F59E0B 100%);
-  border-radius: 12rpx;
-  transition: width 0.3s ease;
-}
-
-.issue-bar.danger {
-  background: linear-gradient(90deg, #EF4444 0%, #F97316 100%);
-}
-
-.issue-score {
-  width: 80rpx;
-  text-align: right;
-  font-size: 24rpx;
-  font-weight: 500;
-  color: #F97316;
-}
-
-/* 统计卡片 */
+/* ========== 7. 快速统计卡片 ========== */
 .stats-card {
   display: flex;
   background-color: #FFFFFF;
   border-radius: 24rpx;
   padding: 32rpx;
-  box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.05);
+  box-shadow: 0 2rpx 12rpx rgba(0, 0, 0, 0.06);
 }
 
 .stat-item {
@@ -211,4 +428,52 @@
   display: block;
   font-size: 24rpx;
   color: #6B7280;
+}
+
+/* ========== 加载与空状态 ========== */
+.loading {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 60vh;
+}
+
+.loading-spinner {
+  width: 64rpx;
+  height: 64rpx;
+  border: 4rpx solid #E5E7EB;
+  border-top-color: #3B82F6;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 60vh;
+  text-align: center;
+}
+
+.empty-icon {
+  font-size: 80rpx;
+  margin-bottom: 24rpx;
+}
+
+.empty-text {
+  font-size: 32rpx;
+  color: #374151;
+  margin-bottom: 12rpx;
+}
+
+.empty-hint {
+  font-size: 26rpx;
+  color: #9CA3AF;
 }

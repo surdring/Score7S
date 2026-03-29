@@ -6,6 +6,81 @@
 const db = wx.cloud.database();
 
 /**
+ * 请求队列类 - 控制并发请求数，避免触发云开发频率限制
+ */
+class RequestQueue {
+  private queue: Array<{
+    request: () => Promise<any>;
+    resolve: (value: any) => void;
+    reject: (reason: any) => void;
+  }> = [];
+  private processing = 0;
+  private maxConcurrent = 5; // 最大并发数
+
+  /**
+   * 添加请求到队列
+   */
+  async add<T>(request: () => Promise<T>): Promise<T> {
+    return new Promise((resolve, reject) => {
+      this.queue.push({
+        request,
+        resolve: resolve as (value: any) => void,
+        reject,
+      });
+      this.process();
+    });
+  }
+
+  /**
+   * 处理队列中的请求
+   */
+  private async process() {
+    // 如果已达到最大并发数或队列为空，则返回
+    if (this.processing >= this.maxConcurrent || this.queue.length === 0) {
+      return;
+    }
+
+    this.processing++;
+    const item = this.queue.shift()!;
+
+    try {
+      const result = await item.request();
+      item.resolve(result);
+    } catch (err) {
+      item.reject(err);
+    } finally {
+      this.processing--;
+      // 处理下一个请求
+      this.process();
+    }
+  }
+
+  /**
+   * 获取当前队列长度
+   */
+  getQueueLength(): number {
+    return this.queue.length;
+  }
+
+  /**
+   * 获取当前处理中的请求数
+   */
+  getProcessingCount(): number {
+    return this.processing;
+  }
+}
+
+// 全局请求队列实例
+const requestQueue = new RequestQueue();
+
+/**
+ * 使用请求队列执行数据库操作
+ */
+export function withQueue<T>(request: () => Promise<T>): Promise<T> {
+  return requestQueue.add(request);
+}
+
+/**
  * 获取集合引用
  */
 export function collection(name: string) {
