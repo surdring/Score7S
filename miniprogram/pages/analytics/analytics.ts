@@ -34,9 +34,7 @@ Page({
     // ========== 新增数据 ==========
     healthOverview: {
       overallAverage: 0,
-      passRate: 0,
-      weekOverWeekChange: 0,
-      totalInspections: 0
+      weekOverWeekChange: 0
     },
     paretoData: [] as Array<{ item: string; deductionTotal: number; deductionPercent: number }>,
     unqualifiedOffices: [] as Array<{ department: string; room: string; totalScore: number; date: string }>,
@@ -49,7 +47,6 @@ Page({
       { value: 30, label: '本月' },
       { value: 90, label: '本季度' }
     ],
-    inspectionCount: 0, // 本周期检查次数
     
     // ========== 洞察提示 ==========
     paretoInsight: '',
@@ -122,24 +119,32 @@ Page({
     // 判断是否稳定在高位（80分以上）
     const isHighAndStable = avg >= 80 && stdDev < 8;
 
+    // 计算增长率（针对 87.4 → 92.6 这种变化）
+    const growthRate = previous > 0 ? ((current - previous) / previous * 100).toFixed(1) : '0';
+
+    // 针对近期只有两个数据点的情况（如 87.4 → 92.6）
+    if (scores.length === 2 && current > previous && current >= 90) {
+      return `整体表现大幅跃升。本期综合分突破 90 分大关，较上期增长了 ${growthRate}%。这说明全公司近期开展的专项治理效果显著，请继续保持这一势头，并开始关注长效维持机制。`;
+    }
+
     if (isVolatile) {
-      return `⚠️ 波动过大。近期分数呈现明显的"锯齿状"，说明存在"突击应付检查"现象，7S 尚未形成日常习惯，建议本周增加【突击盲查】频次。`;
+      return `近期分数呈现明显的波动，说明存在"突击应付检查"现象，7S 尚未形成日常习惯，建议本周增加突击盲查频次。`;
     }
 
     if (declineCount >= 3) {
-      return `📉 连续下滑。全公司 7S 管理水平已连续 ${declineCount} 个周期下降，整体呈现松懈态势，建议立即召开专项会议敲响警钟。`;
+      return `全公司 7S 管理水平已连续 ${declineCount} 个周期下降，整体呈现松懈态势，建议立即召开专项会议敲响警钟。`;
     }
 
     if (riseCount >= 2 && current >= 80) {
-      return `✅ 稳步提升。近期得分已连续 ${riseCount} 个周期上升，当前达到 ${current} 分，7S 管理成效显著，建议继续保持当前标准并考虑树立标杆。`;
+      return `近期得分已连续 ${riseCount} 个周期上升，当前达到 ${current} 分，7S 管理成效显著，建议继续保持当前标准并考虑树立标杆。`;
     }
 
     if (isHighAndStable) {
-      return `✅ 运行平稳。近期得分稳定在 ${avg.toFixed(1)} 分以上，说明全公司已基本建立 7S 维持机制，建议将管理重心从"检查扣分"转移到"评优奖励"。`;
+      return `近期得分稳定在 ${avg.toFixed(1)} 分以上，说明全公司已基本建立 7S 维持机制，建议将管理重心从"检查扣分"转移到"评优奖励"。`;
     }
 
     if (current < 60) {
-      return `🚨 严重告警。当前平均分仅 ${current} 分，远低于 60 分达标线，7S 管理已处于失控边缘，需立即启动全面整改。`;
+      return `当前平均分仅 ${current} 分，远低于 60 分达标线，7S 管理已处于失控边缘，需立即启动全面整改。`;
     }
 
     // 默认情况
@@ -159,8 +164,23 @@ Page({
   },
 
   onShow() {
+    // 页面重新显示时，强制检查并重新初始化图表
     if (this.data._initialized) {
-      this.checkCacheAndLoad();
+      // 延迟检查，确保 Canvas 节点已准备就绪
+      setTimeout(() => {
+        const needReinit = !this.lineChart || !this.paretoChart;
+        if (needReinit) {
+          console.log('[Analytics] 页面重新显示，图表实例缺失，重新初始化');
+          this.initECharts();
+          // 延迟更新图表
+          setTimeout(() => {
+            this.updateCharts();
+          }, 400);
+        } else {
+          // 图表实例存在，正常更新
+          this.checkCacheAndLoad();
+        }
+      }, 100);
     }
   },
 
@@ -306,15 +326,14 @@ Page({
 
   // 更新所有图表
   updateCharts() {
-    // 检查图表实例，如果不存在先初始化
+    // 检查图表实例，如果不存在需要重新初始化原生 Canvas
     if (!this.lineChart || !this.paretoChart) {
-      console.log('[Analytics] 图表实例不存在，尝试重新初始化');
-      this.initECharts();
-      // 延迟更新给初始化时间
+      console.log('[Analytics] 图表实例不存在，准备重新初始化原生 Canvas');
+      // 延迟执行，确保 WXML 已渲染
       setTimeout(() => {
         this.updateLineChart();
         this.updateParetoChart();
-      }, 400);
+      }, 300);
       return;
     }
     this.updateLineChart();
@@ -391,7 +410,6 @@ Page({
           healthOverview: result.healthOverview || {},
           paretoData: result.paretoData || [],
           unqualifiedOffices: result.unqualifiedOffices || [],
-          inspectionCount: result.inspectionCount || 0,
           paretoInsight,
           trendInsight,
           hasData: true,
@@ -480,6 +498,10 @@ Page({
     const { paretoData } = this.data;
     if (!paretoData || paretoData.length === 0) return;
 
+    // 引入 echarts 用于创建渐变
+    // @ts-ignore
+    const echarts = require('../../components/ec-canvas/echarts');
+
     const items = paretoData.map((d: any) => d.item);
     const deductions = paretoData.map((d: any) => d.deductionTotal);
     
@@ -495,7 +517,7 @@ Page({
       grid: {
         top: '8%',
         left: '22%',
-        right: '5%',
+        right: '8%',
         bottom: '12%',
         containLabel: false
       },
@@ -521,20 +543,26 @@ Page({
         {
           name: '扣分额',
           type: 'bar',
-          barWidth: 14,
+          barWidth: 12,
           data: deductions.map((value: number, index: number) => ({
             value,
             itemStyle: {
-              color: index < 3 ? '#EA580C' : '#D1D5DB',
+              color: index < 3 
+                ? new (echarts as any).graphic.LinearGradient(0, 0, 1, 0, [
+                    { offset: 0, color: '#3B82F6' },
+                    { offset: 1, color: '#6366F1' }
+                  ])
+                : '#E9ECEF',
               borderRadius: [0, 6, 6, 0]
             },
             label: {
               show: true,
-              position: 'right',
+              position: 'insideRight',
               formatter: '{c}分',
               fontSize: 10,
-              color: index < 3 ? '#EA580C' : '#9CA3AF',
-              fontWeight: index < 3 ? 'bold' : 'normal'
+              color: index < 3 ? '#FFFFFF' : '#6B7280',
+              fontWeight: index < 3 ? 'bold' : 'normal',
+              offset: [-8, 0]
             }
           }))
         },
@@ -542,9 +570,8 @@ Page({
           name: '累计占比',
           type: 'line',
           symbol: 'circle',
-          symbolSize: 6,
+          symbolSize: 5,
           data: accumulatedPercents.map((p: number, index: number) => {
-            // 找到第一个超过66%的节点，或者最后一个节点，显示标签
             const isLast = index === accumulatedPercents.length - 1;
             const prevP = index > 0 ? accumulatedPercents[index - 1] : 0;
             const isThresholdCrossed = prevP < 66 && p >= 66;
@@ -561,12 +588,20 @@ Page({
                 fontSize: 10,
                 color: '#F59E0B',
                 fontWeight: 'bold',
-                distance: 6
+                distance: 8
               }
             };
           }),
-          lineStyle: { color: '#F59E0B', width: 2 },
-          itemStyle: { color: '#F59E0B' },
+          lineStyle: { 
+            color: '#F59E0B', 
+            width: 1.5,
+            type: 'solid'
+          },
+          itemStyle: { 
+            color: '#F59E0B',
+            borderWidth: 1,
+            borderColor: '#FFF'
+          },
           z: 10
         }
       ]
@@ -583,6 +618,10 @@ Page({
   updateLineChart() {
     const { trendData } = this.data;
     if (!trendData || trendData.length === 0) return;
+
+    // 引入 echarts 用于创建渐变
+    // @ts-ignore
+    const echarts = require('../../components/ec-canvas/echarts');
 
     const isLowDensity = trendData.length <= 2;
     const scores = trendData.map((t: any) => t.averageScore);
@@ -644,29 +683,51 @@ Page({
         },
         yAxis: {
           type: 'value',
-          min: yMin,
-          max: yMax,
+          min: 70,
+          max: 100,
+          interval: 10,
           splitLine: { lineStyle: { type: 'dashed', color: '#F3F4F6' } },
           axisLine: { show: false },
-          axisLabel: { color: '#9CA3AF', fontSize: 10 }
+          axisLabel: { 
+            color: '#9CA3AF', 
+            fontSize: 10,
+            formatter: (value: number) => value % 20 === 0 || value === 70 || value === 100 ? value : ''
+          }
         },
-        visualMap: visualMapConfig,
         series: [
           {
             type: 'line',
-            data: scores,
+            data: scores.map((score: number, index: number) => ({
+              value: score,
+              itemStyle: index === scores.length - 1 ? {
+                color: '#3B82F6',
+                borderWidth: 2,
+                borderColor: '#FFF',
+                shadowBlur: 10,
+                shadowColor: 'rgba(59, 130, 246, 0.5)'
+              } : {
+                color: '#3B82F6',
+                borderWidth: 1,
+                borderColor: '#FFF'
+              }
+            })),
             smooth: true,
             symbol: 'circle',
             symbolSize: 6,
-            lineStyle: { color: '#3B82F6', width: 2 },
-            itemStyle: { color: '#3B82F6', borderWidth: 1, borderColor: '#FFF' },
-            areaStyle: {}, // visualMap 会控制颜色
+            lineStyle: { color: '#3B82F6', width: 2.5 },
+            areaStyle: {
+              color: new (echarts as any).graphic.LinearGradient(0, 0, 0, 1, [
+                { offset: 0, color: 'rgba(59, 130, 246, 0.25)' },
+                { offset: 1, color: 'rgba(59, 130, 246, 0.02)' }
+              ])
+            },
             label: {
               show: true,
               position: 'top',
               fontSize: 11,
               color: '#374151',
-              fontWeight: 500
+              fontWeight: 500,
+              fontFamily: 'DIN Alternate, SF Pro Display, -apple-system'
             },
             markLine: markLineConfig
           }
@@ -699,23 +760,44 @@ Page({
       },
       yAxis: {
         type: 'value',
-        min: yMin,
-        max: yMax,
+        min: 70,
+        max: 100,
+        interval: 10,
         splitLine: { lineStyle: { type: 'dashed', color: '#F3F4F6' } },
         axisLine: { show: false },
-        axisLabel: { color: '#9CA3AF', fontSize: 10 }
+        axisLabel: { 
+          color: '#9CA3AF', 
+          fontSize: 10,
+          formatter: (value: number) => value % 20 === 0 || value === 70 || value === 100 ? value : ''
+        }
       },
-      visualMap: visualMapConfig,
       series: [{
         type: 'line',
-        data: scores,
+        data: scores.map((score: number, index: number) => ({
+          value: score,
+          itemStyle: index === scores.length - 1 ? {
+            color: '#3B82F6',
+            borderWidth: 2,
+            borderColor: '#FFF',
+            shadowBlur: 12,
+            shadowColor: 'rgba(59, 130, 246, 0.6)'
+          } : {
+            color: '#3B82F6',
+            borderWidth: 1,
+            borderColor: '#FFF'
+          }
+        })),
         smooth: true,
         showSymbol: true,
         symbol: 'circle',
-        symbolSize: 4,
-        lineStyle: { color: '#3B82F6', width: 2 },
-        itemStyle: { color: '#3B82F6', borderWidth: 1, borderColor: '#FFF' },
-        areaStyle: {}, // visualMap 会控制颜色
+        symbolSize: (data: any, params: any) => params.dataIndex === scores.length - 1 ? 8 : 4,
+        lineStyle: { color: '#3B82F6', width: 2.5 },
+        areaStyle: {
+          color: new (echarts as any).graphic.LinearGradient(0, 0, 0, 1, [
+            { offset: 0, color: 'rgba(59, 130, 246, 0.25)' },
+            { offset: 1, color: 'rgba(59, 130, 246, 0.02)' }
+          ])
+        },
         markPoint: {
           symbol: 'circle',
           symbolSize: 10,

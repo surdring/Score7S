@@ -126,12 +126,6 @@ exports.main = async (event, context) => {
       ? Math.round(currentRecords.reduce((sum, r) => sum + r.totalScore, 0) / currentRecords.length * 10) / 10
       : 0;
 
-    // 计算达标率（得分 >= 80分）
-    const passCount = currentRecords.filter(r => r.totalScore >= PASS_THRESHOLD).length;
-    const passRate = currentRecords.length > 0
-      ? Math.round(passCount / currentRecords.length * 1000) / 10
-      : 0;
-
     // 计算环比涨跌幅
     const prevPeriodRes = await db.collection('inspections')
       .where({
@@ -148,18 +142,9 @@ exports.main = async (event, context) => {
       ? Math.round((overallAverage - prevAverage) / prevAverage * 1000) / 10
       : 0;
 
-    // 计算检查天数（不同日期的数量）
-    const uniqueDates = new Set(currentRecords.map(r => r.date));
-    const inspectionDays = uniqueDates.size;
-    
-    // 检查天数作为"检查次数"（以天为单位统计）
-    const inspectionCount = inspectionDays;
-
     const healthOverview = {
       overallAverage,
-      passRate,
-      weekOverWeekChange,
-      totalInspections: inspectionDays
+      weekOverWeekChange
     };
 
     // ========== 5. 帕累托分析：扣分总额排序 ==========
@@ -214,8 +199,7 @@ exports.main = async (event, context) => {
         deductionPercent: totalDeduction > 0 ? Math.round(d.deductionTotal / totalDeduction * 1000) / 10 : 0
       })),
       // ~~roomDistribution 已删除~~
-      unqualifiedOffices,
-      inspectionCount // 本周期检查次数
+      unqualifiedOffices
     };
   } catch (err) {
     console.error('获取分析数据失败', err);

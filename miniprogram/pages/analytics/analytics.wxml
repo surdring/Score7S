@@ -16,30 +16,38 @@
   <view wx:else class="charts-container">
     <!-- ========== 1. 全局健康概览（KPI 卡片）========== -->
     <view class="health-overview">
-      <view class="overview-title">全局健康概览</view>
+      <view class="overview-header">
+        <view class="overview-title-area">
+          <view class="overview-title">全局健康概览</view>
+          <view class="overview-hint">当前周期的均分汇总与趋势</view>
+        </view>
+        <view class="time-filter-overview" bindtap="showTimeFilter">
+          <text class="filter-text-overview">{{timeRangeText}}</text>
+          <text class="filter-arrow-overview">▼</text>
+        </view>
+      </view>
       <view class="kpi-grid">
-        <view class="kpi-card">
-          <view class="kpi-icon">🎯</view>
-          <view class="kpi-value">{{healthOverview.overallAverage}}</view>
-          <view class="kpi-label">综合均分</view>
+        <!-- 左侧大卡片：综合均分（占2/3） -->
+        <view class="kpi-card kpi-main {{healthOverview.overallAverage >= 90 ? 'excellent' : (healthOverview.overallAverage >= 80 ? 'good' : (healthOverview.overallAverage >= 60 ? 'pass' : 'fail'))}}">
+          <view class="kpi-icon-svg">
+            <view class="icon-gauge"></view>
+          </view>
+          <view class="kpi-value-main">{{healthOverview.overallAverage}}</view>
+          <view class="kpi-label-row">
+            <text class="kpi-label">均分</text>
+            <text class="kpi-target">目标 90</text>
+          </view>
         </view>
-        <view class="kpi-card">
-          <view class="kpi-icon">✅</view>
-          <view class="kpi-value">{{healthOverview.passRate}}%</view>
-          <view class="kpi-label">达标率</view>
-        </view>
-        <view class="kpi-card {{healthOverview.weekOverWeekChange > 0 ? 'positive' : (healthOverview.weekOverWeekChange < 0 ? 'negative' : 'neutral')}}">
-          <view class="kpi-icon">{{healthOverview.weekOverWeekChange > 0 ? '📈' : (healthOverview.weekOverWeekChange < 0 ? '📉' : '➖')}}</view>
-          <view class="kpi-value">
+        <!-- 右侧小卡片：环比变化（占1/3） -->
+        <view class="kpi-card kpi-side {{healthOverview.weekOverWeekChange > 0 ? 'positive' : (healthOverview.weekOverWeekChange < 0 ? 'negative' : 'neutral')}}">
+          <view class="kpi-icon-svg">
+            <view class="icon-trend {{healthOverview.weekOverWeekChange > 0 ? 'up' : (healthOverview.weekOverWeekChange < 0 ? 'down' : '')}}"></view>
+          </view>
+          <view class="kpi-value-side">
             <text class="trend-arrow">{{healthOverview.weekOverWeekChange > 0 ? '↑' : (healthOverview.weekOverWeekChange < 0 ? '↓' : '')}}</text>
             {{healthOverview.weekOverWeekChange > 0 ? '+' : ''}}{{healthOverview.weekOverWeekChange}}%
           </view>
           <view class="kpi-label">环比变化</view>
-        </view>
-        <view class="kpi-card">
-          <view class="kpi-icon">📅</view>
-          <view class="kpi-value">{{healthOverview.totalInspections}}</view>
-          <view class="kpi-label">检查天数</view>
         </view>
       </view>
     </view>
@@ -73,15 +81,14 @@
     <!-- ========== 3. 帕累托分析：扣分 Top 3 ========== -->
     <view class="chart-card">
       <view class="chart-header">
-        <text class="chart-icon">📊</text>
-        <view class="chart-accent"></view>
+        <view class="chart-icon-svg icon-pareto"></view>
         <text class="chart-title">帕累托分析：扣分分布</text>
       </view>
       <view class="canvas-container">
         <canvas type="2d" id="paretoChart" class="echarts-canvas"></canvas>
       </view>
-      <view class="insight-card" wx:if="{{paretoInsight}}">
-        <text class="insight-icon">🎯</text>
+      <view class="insight-card pareto-insight-card" wx:if="{{paretoInsight}}">
+        <view class="insight-icon-svg icon-target"></view>
         <view class="insight-content">
           <text class="insight-title">优化建议</text>
           <text class="insight-text">{{paretoInsight}}</text>
@@ -92,24 +99,16 @@
     <!-- ========== 4. 动态趋势稳定性分析 ========== -->
     <view class="chart-card">
       <view class="chart-header">
-        <text class="chart-icon">📈</text>
-        <view class="chart-accent"></view>
+        <view class="chart-icon-svg icon-trend-line"></view>
         <text class="chart-title">全公司 7S 综合平均分趋势</text>
-        <view class="time-filter" bindtap="showTimeFilter">
-          <text class="filter-text">{{timeRangeText}}</text>
-          <text class="filter-arrow">▼</text>
-        </view>
       </view>
       <view class="chart-body line-container">
         <canvas type="2d" id="lineChart" class="ec-canvas"></canvas>
       </view>
-      <view class="data-note" wx:if="{{inspectionCount > 0}}">
-        * 以上分数为本周期内 {{inspectionCount}} 次例行检查的平均值
-      </view>
       
       <!-- 趋势解读卡片 -->
-      <view class="insight-card trend-insight-card" wx:if="{{trendInsight}}">
-        <text class="insight-icon">💡</text>
+      <view class="insight-card-v2 trend-insight-card-v2" wx:if="{{trendInsight}}">
+        <view class="insight-icon-svg icon-trend-up"></view>
         <view class="insight-content">
           <text class="insight-title">趋势解读</text>
           <text class="insight-text">{{trendInsight}}</text>
