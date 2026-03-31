@@ -13,6 +13,9 @@ page {
   --bg-primary: #F9FAFB;
   --bg-white: #FFFFFF;
   --border-color: #E5E7EB;
+  --page-padding: 32rpx;
+  --card-gap: 24rpx;
+  --card-padding: 32rpx;
   
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
   font-size: 28rpx;
@@ -23,15 +26,15 @@ page {
 
 /* 通用工具类 */
 .container {
-  padding: 32rpx;
-  padding-bottom: calc(32rpx + env(safe-area-inset-bottom));
+  padding: var(--page-padding);
+  padding-bottom: calc(var(--page-padding) + env(safe-area-inset-bottom));
 }
 
 .card {
   background-color: var(--bg-white);
   border-radius: 24rpx;
-  padding: 32rpx;
-  margin-bottom: 24rpx;
+  padding: var(--card-padding);
+  margin-bottom: var(--card-gap);
   box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.05);
 }
 

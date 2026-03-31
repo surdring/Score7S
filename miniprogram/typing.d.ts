@@ -45,7 +45,7 @@ interface Department {
 }
 
 // 云函数返回类型
-interface CloudFunctionResult<T = any> {
+interface CloudFunctionResult<T = unknown> {
   errMsg: string;
   result: T;
 }

@@ -14,12 +14,12 @@
 
   <!-- 有数据 -->
   <view wx:else class="charts-container">
-    <!-- ========== 1. 全局健康概览（KPI 卡片）========== -->
+    <!-- ========== 1. 关键指标概览（KPI 卡片）========== -->
     <view class="health-overview">
       <view class="overview-header">
         <view class="overview-title-area">
-          <view class="overview-title">全局健康概览</view>
-          <view class="overview-hint">当前周期的均分汇总与趋势</view>
+          <view class="overview-title">关键指标概览</view>
+          <view class="overview-hint">聚合均分、变化趋势与目标对照</view>
         </view>
         <view class="time-filter-overview" bindtap="showTimeFilter">
           <text class="filter-text-overview">{{timeRangeText}}</text>
@@ -52,12 +52,12 @@
       </view>
     </view>
 
-    <!-- ========== 2. 异常穿透（提前至概览下方）========== -->
+    <!-- ========== 2. 低分预警（提前至概览下方）========== -->
     <view class="chart-card exception-card" wx:if="{{unqualifiedOffices.length > 0}}">
       <view class="chart-header" bindtap="toggleExceptionList">
         <text class="chart-icon">⚠️</text>
         <view class="chart-accent"></view>
-        <text class="chart-title">异常穿透</text>
+        <text class="chart-title">低分预警</text>
         <view class="exception-badge">{{unqualifiedOffices.length}}</view>
         <text class="toggle-arrow {{showExceptionList ? 'expanded' : ''}}">▼</text>
       </view>
@@ -100,7 +100,7 @@
     <view class="chart-card">
       <view class="chart-header">
         <view class="chart-icon-svg icon-trend-line"></view>
-        <text class="chart-title">全公司 7S 综合平均分趋势</text>
+        <text class="chart-title">7S 综合平均分趋势</text>
       </view>
       <view class="chart-body line-container">
         <canvas type="2d" id="lineChart" class="ec-canvas"></canvas>

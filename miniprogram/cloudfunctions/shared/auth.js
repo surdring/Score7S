@@ -32,15 +32,9 @@ async function verifyAdminPermission() {
       .get()
       .catch(() => ({ data: null }));
     
-    // 如果配置不存在或未设置管理员列表，则允许所有用户访问（兼容模式）
-    // 注意：生产环境应强制要求设置管理员列表
+    // 安全要求：配置缺失不得放行（避免 shared 未同步/配置缺失导致越权）
     if (!configRes.data || !configRes.data.adminOpenIds) {
-      console.warn('未配置管理员列表，使用兼容模式（允许所有用户）');
-      return {
-        openId: OPENID,
-        isAdmin: true,
-        mode: 'compat'
-      };
+      throw new Error('未配置管理员列表');
     }
     
     const adminOpenIds = configRes.data.adminOpenIds;
@@ -59,7 +53,7 @@ async function verifyAdminPermission() {
     };
   } catch (err) {
     // 如果是权限错误，直接抛出
-    if (err.message === '无权限访问') {
+    if (err.message === '无权限访问' || err.message === '未配置管理员列表') {
       throw err;
     }
     // 其他错误记录日志后抛出

@@ -1,19 +1,23 @@
 <!--pages/home/home.wxml-->
 <view class="container">
-  <!-- 头部标题 -->
+  <!-- 头部标题 - 卡片式蓝紫渐变 -->
   <view class="header">
     <view class="header-content">
-      <!-- 日期选择器 -->
+      <!-- 左侧：标题和副标题 -->
+      <view class="header-left">
+        <text class="header-title">最新联查概览</text>
+        <text class="header-subtitle">现场红黑榜及核心动态摘要</text>
+      </view>
+      <!-- 右侧：日期选择器 -->
       <view class="date-selector">
         <picker mode="date" value="{{selectedDate}}" bindchange="onDateChange">
           <view class="date-picker-btn">
-            <text class="date-icon">📅</text>
+            <view class="date-icon"></view>
             <text class="date-text">{{selectedDate || '选择日期'}}</text>
-            <text class="date-arrow">▼</text>
+            <text class="date-arrow">▾</text>
           </view>
         </picker>
       </view>
-      <text class="admin-link" bindtap="goToAdmin">⚙️ 管理</text>
     </view>
   </view>
 
@@ -25,37 +29,34 @@
   <!-- 红榜 -->
   <view wx:if="{{!loading}}" class="section">
     <view class="section-header">
-      <view class="section-icon red">
-        <text>👑</text>
+      <view class="header-left">
+        <view class="section-icon red"></view>
       </view>
       <text class="section-title">红榜</text>
-      <text class="section-badge">最优秀</text>
+      <text class="section-subtitle">优秀办公室</text>
     </view>
 
     <view wx:if="{{redList.length === 0}}" class="empty-card">
       <text class="empty-icon">✨</text>
       <text class="empty-text">暂无红榜数据</text>
-      <text class="empty-hint">本期还没有产生高分部门</text>
+      <text class="empty-hint">本期还没有产生高分办公室</text>
     </view>
 
     <view wx:else class="rank-list">
       <view 
         wx:for="{{redList}}" 
         wx:key="_id" 
-        class="rank-card red clickable"
+        class="rank-card {{item.totalScore === 100 ? 'perfect' : 'red'}} clickable"
         bindtap="viewDetail"
         data-id="{{item._id}}"
       >
-        <view class="rank-number {{item.rank === 1 ? 'gold' : item.rank === 2 ? 'silver' : item.rank === 3 ? 'bronze' : ''}}">
-          <text>{{item.rank}}</text>
-        </view>
-        <view class="rank-info">
-          <text class="rank-dept">{{item.department}}</text>
-          <text class="rank-room">{{item.room}}</text>
-        </view>
-        <view class="rank-score red">
-          <text class="score-value">{{item.totalScore}}</text>
-          <text class="score-label">分</text>
+        <view class="rank-number-bg">{{item.rank}}</view>
+        <view class="card-content">
+          <view class="rank-info">
+            <text class="rank-office">{{item.room}}</text>
+            <text class="rank-dept">{{item.department}}</text>
+          </view>
+          <view class="rank-score {{item.totalScore === 100 ? 'perfect' : 'red'}}">{{item.totalScore}}</view>
         </view>
       </view>
     </view>
@@ -64,11 +65,11 @@
   <!-- 黑榜 -->
   <view wx:if="{{!loading}}" class="section">
     <view class="section-header">
-      <view class="section-icon black">
-        <text>⚠</text>
+      <view class="header-left">
+        <view class="section-icon black"></view>
       </view>
       <text class="section-title">黑榜</text>
-      <text class="section-badge">待改进</text>
+      <text class="section-subtitle">待改进</text>
     </view>
 
     <view wx:if="{{blackList.length === 0}}" class="empty-card">
@@ -85,24 +86,59 @@
         bindtap="viewBlackDetail"
         data-id="{{item._id}}"
       >
-        <view class="rank-number danger">
-          <text>{{item.reverseRank}}</text>
-        </view>
-        <view class="rank-info">
-          <text class="rank-dept">{{item.department}}</text>
-          <text class="rank-room">{{item.room}}</text>
-        </view>
-        <view class="rank-score-container">
-          <text class="rank-score black">{{item.totalScore}}</text>
-          <text class="view-detail-arrow">›</text>
+        <view class="rank-number-bg danger">{{item.reverseRank}}</view>
+        <view class="card-content">
+          <view class="rank-info">
+            <text class="rank-office">{{item.room}}</text>
+            <text class="rank-dept">{{item.department}}</text>
+          </view>
+          <view class="rank-score black">{{item.totalScore}}</view>
         </view>
       </view>
       
-      <!-- 黑榜少于3个时的说明 -->
-      <view wx:if="{{blackList.length < 3}}" class="blacklist-hint">
-        <text class="hint-icon">ℹ️</text>
-        <text class="hint-text">本期满分或与红榜同分的部门较多，黑榜仅显示{{blackList.length}}个</text>
+      <!-- 榜单说明作为底部备注 -->
+      <view wx:if="{{blackList.length < 3}}" class="rank-footer">
+        <text>本期满分或与红榜同分的办公室较多，黑榜仅显示{{blackList.length}}个</text>
       </view>
+    </view>
+  </view>
+
+  <!-- 本期提示 -->
+  <view wx:if="{{!loading && (redList.length > 0 || blackList.length > 0)}}" class="insight-card">
+    <view class="insight-header">
+      <view class="insight-icon"></view>
+      <text class="insight-title">本期提示</text>
+    </view>
+    <view class="insight-content">
+      <block wx:if="{{insightData.perfectCount > 0}}">
+        <text>本期共有 </text>
+        <text class="count-highlight">{{insightData.perfectCount}}</text>
+        <text> 间办公室得满分</text>
+        <block wx:if="{{insightData.topOfficeNames}}">
+          <text>；</text>
+          <text class="office-highlight" bindtap="viewTopOffice">{{insightData.topOfficeNames}}</text>
+          <text>本期并列榜首</text>
+        </block>
+      </block>
+      <block wx:elif="{{insightData.topOfficeNames}}">
+        <text class="office-highlight" bindtap="viewTopOffice">{{insightData.topOfficeNames}}</text>
+        <block wx:if="{{insightData.topOfficeCount > 1}}">
+          <text>本期并列榜首（{{insightData.topScore}}分）</text>
+        </block>
+        <block wx:else>
+          <text>本期位列榜首（{{insightData.topScore}}分）</text>
+        </block>
+      </block>
+      <block wx:if="{{insightData.blackOfficeNames}}">
+        <text>；</text>
+        <text class="office-highlight" bindtap="viewBlackFirst">{{insightData.blackOfficeNames}}</text>
+        <block wx:if="{{insightData.blackOfficeCount > 1}}">
+          <text>本期并列榜尾（{{insightData.blackScore}}分），需要重点关注，建议督导干预</text>
+        </block>
+        <block wx:else>
+          <text>本期位列榜尾（{{insightData.blackScore}}分），需要重点关注，建议督导干预</text>
+        </block>
+      </block>
     </view>
   </view>
 </view>

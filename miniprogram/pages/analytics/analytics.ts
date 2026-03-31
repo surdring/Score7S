@@ -3,19 +3,21 @@ import { SCORING_ITEMS, SCORING_MAX_SCORES } from '../../config/scoring';
 
 // ECharts 图表配置类型
 interface EChartOption {
-  onInit: (chart: any) => void;
+  onInit?: (chart: ChartInstance) => void;
+  lazyLoad?: boolean;
+}
+
+interface ChartInstance {
+  setOption: (option: unknown) => void;
+  dispose: () => void;
 }
 
 // 声明 echarts 库变量（用于内部引用）
-let echartsLib: any = null;
+let echartsLib: unknown = null;
 function getEchartsLib() {
   if (!echartsLib) {
     // @ts-ignore
     echartsLib = require('../../components/ec-canvas/echarts');
-  }
-  if (!echartsLib || !echartsLib.graphic) {
-    // 如果没有 graphic，尝试从全局引入或使用简化的颜色字符串
-    // 这里我们先假定组件内包含完整的 echarts
   }
   return echartsLib;
 }
@@ -88,10 +90,13 @@ Page({
   },
 
   // 生成趋势解读
-  generateTrendInsight(trendData: any[], healthOverview: any): string {
+  generateTrendInsight(
+    trendData: Array<{ averageScore: number; date: string }>,
+    healthOverview: { averageScore?: number } | null | undefined
+  ): string {
     if (!Array.isArray(trendData) || trendData.length < 2) return '';
 
-    const scores = trendData.map((t: any) => t.averageScore);
+    const scores = trendData.map((t) => t.averageScore);
     const current = scores[scores.length - 1];
     const previous = scores[scores.length - 2];
     const change = Math.round((current - previous) * 10) / 10;
@@ -170,7 +175,6 @@ Page({
       setTimeout(() => {
         const needReinit = !this.lineChart || !this.paretoChart;
         if (needReinit) {
-          console.log('[Analytics] 页面重新显示，图表实例缺失，重新初始化');
           this.initECharts();
           // 延迟更新图表
           setTimeout(() => {
@@ -193,7 +197,7 @@ Page({
   },
 
   // 手动初始化单个图表
-  initChart(id: string, option: any) {
+  initChart(id: string, option: unknown) {
     const component = this.selectComponent(`#${id}`);
     if (!component) {
       console.warn(`未找到组件: #${id}，尝试延迟初始化`);
@@ -209,10 +213,13 @@ Page({
   },
 
     // 执行初始化逻辑
-    doInitChart(component: any, id: string, option: any) {
-      console.log(`[ECharts] 开始初始化图表: ${id}`);
-      component.init((canvas: any, width: number, height: number, dpr: number) => {
-        console.log(`[ECharts] 组件 init 回调触发: ${id}, size: ${width}x${height}, dpr: ${dpr}`);
+    doInitChart(component: unknown, id: string, option: unknown) {
+      const comp = component as { init?: (cb: (canvas: unknown, width: number, height: number, dpr: number) => unknown) => void };
+      if (typeof comp.init !== 'function') {
+        console.error(`[ECharts] 组件缺少 init 方法: ${id}`);
+        return;
+      }
+      comp.init((canvas: unknown, width: number, height: number, dpr: number) => {
         // @ts-ignore
         try {
           const echarts = require('../../components/ec-canvas/echarts');
@@ -221,23 +228,20 @@ Page({
             return null;
           }
           
-          console.log(`[ECharts] 正在调用 echarts.init: ${id}`);
           // 适配旧版 Canvas：如果 canvas 上没有 addEventListener（即它是 ctx），则需要特殊处理
           const chart = echarts.init(canvas, null, {
             width: width,
             height: height,
             devicePixelRatio: dpr,
-            renderer: canvas.getContext ? 'canvas' : 'svg' // 尝试自适应渲染器
-          });
+            renderer: (canvas as { getContext?: unknown }).getContext ? 'canvas' : 'svg' // 尝试自适应渲染器
+          }) as unknown as ChartInstance;
           
-          console.log(`[ECharts] 正在调用 setOption: ${id}`);
           chart.setOption(option);
           
           // 保存引用以备后续更新
           if (id === 'lineChart') this.lineChart = chart;
           else if (id === 'paretoChart') this.paretoChart = chart;
           
-          console.log(`[ECharts] 图表渲染成功: ${id}`);
           return chart;
         } catch (e) {
           console.error(`[ECharts] 初始化图表发生异常: ${id}`, e);
@@ -247,77 +251,75 @@ Page({
     },
 
   // 直接初始化原生 Canvas 上的 ECharts
-  initNativeChart(id: string, option: any) {
-    console.log(`[ECharts] 尝试初始化原生 Canvas: ${id}`);
+  initNativeChart(id: string, option: unknown) {
     const query = this.createSelectorQuery();
     query.select(`#${id}`)
       .fields({ node: true, size: true })
-      .exec((res: any) => {
-        if (!res[0] || !res[0].node) {
+      .exec((res: unknown[]) => {
+        const first = res && res[0] ? (res[0] as { node?: unknown; width?: number; height?: number }) : undefined;
+        if (!first || !first.node) {
           console.error(`[ECharts] 获取原生 Canvas 节点失败: ${id}`, res);
           return;
         }
 
-        const canvas = res[0].node;
+        const canvas = first.node as Record<string, unknown>;
         // 浏览器版 ECharts 依赖 DOM EventTarget 接口，小程序 canvas 节点缺失会导致 addEventListener 报错。
         // 这里注入最小 shim，保证至少能完成静态渲染；交互能力（tooltip/点击/缩放）可能受限。
-        if (typeof canvas.addEventListener !== 'function') {
-          canvas.addEventListener = () => {};
+        if (typeof (canvas as { addEventListener?: unknown }).addEventListener !== 'function') {
+          (canvas as Record<string, unknown>).addEventListener = () => {};
         }
-        if (typeof canvas.removeEventListener !== 'function') {
-          canvas.removeEventListener = () => {};
+        if (typeof (canvas as { removeEventListener?: unknown }).removeEventListener !== 'function') {
+          (canvas as Record<string, unknown>).removeEventListener = () => {};
         }
-        if (typeof canvas.dispatchEvent !== 'function') {
-          canvas.dispatchEvent = () => false;
+        if (typeof (canvas as { dispatchEvent?: unknown }).dispatchEvent !== 'function') {
+          (canvas as Record<string, unknown>).dispatchEvent = () => false;
         }
         if (!canvas.style) {
           canvas.style = {};
         }
-        if (typeof canvas.getBoundingClientRect !== 'function') {
-          canvas.getBoundingClientRect = () => ({
+        if (typeof (canvas as { getBoundingClientRect?: unknown }).getBoundingClientRect !== 'function') {
+          (canvas as Record<string, unknown>).getBoundingClientRect = () => ({
             left: 0,
             top: 0,
-            width: res[0].width,
-            height: res[0].height,
-            right: res[0].width,
-            bottom: res[0].height
+            width: first.width,
+            height: first.height,
+            right: first.width,
+            bottom: first.height
           });
         }
-        if (typeof canvas.setAttribute !== 'function') {
-          canvas.setAttribute = () => {};
+        if (typeof (canvas as { setAttribute?: unknown }).setAttribute !== 'function') {
+          (canvas as Record<string, unknown>).setAttribute = () => {};
         }
-        if (typeof canvas.getAttribute !== 'function') {
-          canvas.getAttribute = () => null;
+        if (typeof (canvas as { getAttribute?: unknown }).getAttribute !== 'function') {
+          (canvas as Record<string, unknown>).getAttribute = () => null;
         }
-        if (typeof canvas.clientWidth !== 'number') {
-          canvas.clientWidth = res[0].width;
+        if (typeof (canvas as { clientWidth?: unknown }).clientWidth !== 'number') {
+          (canvas as Record<string, unknown>).clientWidth = first.width;
         }
-        if (typeof canvas.clientHeight !== 'number') {
-          canvas.clientHeight = res[0].height;
+        if (typeof (canvas as { clientHeight?: unknown }).clientHeight !== 'number') {
+          (canvas as Record<string, unknown>).clientHeight = first.height;
         }
-        const ctx = canvas.getContext('2d');
+        const ctx = (canvas as { getContext: (type: '2d') => { scale: (x: number, y: number) => void } }).getContext('2d');
         const systemInfo = wx.getWindowInfo();
         const dpr = systemInfo.pixelRatio;
         
-        canvas.width = res[0].width * dpr;
-        canvas.height = res[0].height * dpr;
+        (canvas as Record<string, unknown>).width = (first.width || 0) * dpr;
+        (canvas as Record<string, unknown>).height = (first.height || 0) * dpr;
         ctx.scale(dpr, dpr);
 
         try {
           // @ts-ignore
           const echarts = require('../../components/ec-canvas/echarts');
           const chart = echarts.init(canvas, null, {
-            width: res[0].width,
-            height: res[0].height,
+            width: first.width,
+            height: first.height,
             devicePixelRatio: dpr
-          });
+          }) as unknown as ChartInstance;
           chart.setOption(option);
           
           // 保存引用
           if (id === 'lineChart') this.lineChart = chart;
           else if (id === 'paretoChart') this.paretoChart = chart;
-          
-          console.log(`[ECharts] 原生 Canvas 渲染成功: ${id}`);
         } catch (e) {
           console.error(`[ECharts] 原生 Canvas 初始化异常: ${id}`, e);
         }
@@ -328,7 +330,6 @@ Page({
   updateCharts() {
     // 检查图表实例，如果不存在需要重新初始化原生 Canvas
     if (!this.lineChart || !this.paretoChart) {
-      console.log('[Analytics] 图表实例不存在，准备重新初始化原生 Canvas');
       // 延迟执行，确保 WXML 已渲染
       setTimeout(() => {
         this.updateLineChart();
@@ -357,7 +358,6 @@ Page({
         // 如果需要重新初始化，延迟执行以确保WXML已更新
         setTimeout(() => {
           if (needReinit) {
-            console.log('[Analytics] 图表实例缺失，重新初始化');
             this.initECharts();
           }
           this.updateCharts();
@@ -394,10 +394,20 @@ Page({
       const res = await wx.cloud.callFunction({
         name: 'getAnalytics',
         data: { dateRange: timeRange }
-      }) as any;
+      });
 
-      if (res.result && res.result.trendData && res.result.trendData.length > 0) {
-        const result = res.result;
+      const result = res.result as unknown as {
+        success?: boolean;
+        trendData?: Array<{ date: string; averageScore: number }>;
+        deptData?: Array<{ department: string; averageScore: number; inspectionCount?: number }>;
+        issueData?: Array<{ item: string; averageScore: number }>;
+        healthOverview?: { overallAverage?: number; weekOverWeekChange?: number; averageScore?: number };
+        paretoData?: Array<{ item: string; deductionTotal: number }>;
+        unqualifiedOffices?: Array<{ department?: string; room?: string; totalScore?: number; date?: string }>;
+        message?: string;
+      };
+
+      if (result && Array.isArray(result.trendData) && result.trendData.length > 0) {
         
         // 生成洞察提示
         const paretoInsight = this.generateParetoInsight(result.paretoData);
@@ -407,9 +417,27 @@ Page({
           trendData: result.trendData,
           deptData: result.deptData || [],
           issueData: result.issueData || [],
-          healthOverview: result.healthOverview || {},
-          paretoData: result.paretoData || [],
-          unqualifiedOffices: result.unqualifiedOffices || [],
+          healthOverview: {
+            overallAverage: Number(result.healthOverview?.overallAverage) || 0,
+            weekOverWeekChange: Number(result.healthOverview?.weekOverWeekChange) || 0,
+          },
+          paretoData: (() => {
+            const src = Array.isArray(result.paretoData) ? result.paretoData : [];
+            const total = src.reduce((acc, cur) => acc + (Number(cur.deductionTotal) || 0), 0);
+            return src.map((p) => ({
+              item: p.item,
+              deductionTotal: Number(p.deductionTotal) || 0,
+              deductionPercent: total > 0 ? Math.round(((Number(p.deductionTotal) || 0) / total) * 1000) / 10 : 0,
+            }));
+          })(),
+          unqualifiedOffices: (Array.isArray(result.unqualifiedOffices) ? result.unqualifiedOffices : [])
+            .filter((o) => typeof o?.department === 'string' && typeof o?.room === 'string' && typeof o?.date === 'string')
+            .map((o) => ({
+              department: String(o.department),
+              room: String(o.room),
+              date: String(o.date),
+              totalScore: Number(o.totalScore) || 0,
+            })),
           paretoInsight,
           trendInsight,
           hasData: true,
@@ -461,17 +489,17 @@ Page({
 
 
   // 辅助方法：生成帕累托洞察
-  generateParetoInsight(paretoData: any): string {
+  generateParetoInsight(paretoData: Array<{ item: string; deductionTotal: number }> | undefined): string {
     if (!Array.isArray(paretoData) || paretoData.length === 0) return '';
 
     const top3Count = Math.min(3, paretoData.length);
     const top3Items = paretoData.slice(0, top3Count);
-    const top3Names = top3Items.map((item: any) => item.item);
-    const top3Sum = top3Items.reduce((acc: number, cur: any) => acc + (cur.deductionTotal || 0), 0);
-    const totalSum = paretoData.reduce((acc: number, cur: any) => acc + (cur.deductionTotal || 0), 0);
+    const top3Names = top3Items.map((item) => item.item);
+    const top3Sum = top3Items.reduce((acc: number, cur) => acc + (cur.deductionTotal || 0), 0);
+    const totalSum = paretoData.reduce((acc: number, cur) => acc + (cur.deductionTotal || 0), 0);
     const top3Percent = totalSum > 0 ? Math.round((top3Sum / totalSum) * 100) : 0;
 
-    if (top3Percent >= 60) {
+    if (top3Percent >= 80) {
       // 列出前3项（或实际有的项数）
       const displayCount = Math.min(3, top3Names.length);
       const displayNames = top3Names.slice(0, displayCount);
@@ -490,8 +518,8 @@ Page({
   },
 
   // 图表实例引用
-  lineChart: null as any,
-  paretoChart: null as any,
+  lineChart: null as ChartInstance | null,
+  paretoChart: null as ChartInstance | null,
 
   // 更新帕累托图
   updateParetoChart() {
@@ -501,9 +529,11 @@ Page({
     // 引入 echarts 用于创建渐变
     // @ts-ignore
     const echarts = require('../../components/ec-canvas/echarts');
+    const echartsGraphic = echarts as unknown as { graphic: { LinearGradient: new (...args: unknown[]) => unknown } };
 
-    const items = paretoData.map((d: any) => d.item);
-    const deductions = paretoData.map((d: any) => d.deductionTotal);
+    // 构建带分值的类目名称：项目名称 (分值)
+    const items = paretoData.map((d: { item: string; deductionTotal: number }) => `${d.item} (${d.deductionTotal})`);
+    const deductions = paretoData.map((d: { item: string; deductionTotal: number }) => d.deductionTotal);
     
     let sum = 0;
     const totalDeduction = deductions.reduce((a: number, b: number) => a + b, 0);
@@ -515,10 +545,10 @@ Page({
     const option = {
       backgroundColor: 'transparent',
       grid: {
-        top: '8%',
-        left: '22%',
-        right: '8%',
-        bottom: '12%',
+        top: '5%',
+        left: '28%',
+        right: '10%',
+        bottom: '8%',
         containLabel: false
       },
       xAxis: {
@@ -533,8 +563,10 @@ Page({
         axisLabel: {
           interval: 0,
           fontSize: 10,
-          color: '#374151',
-          fontWeight: 500
+          color: (value: string, index: number) => index < 3 ? '#374151' : '#9CA3AF',
+          fontWeight: (value: string, index: number) => index < 3 ? 500 : 400,
+          fontFamily: 'DIN Alternate, SF Pro Display, -apple-system',
+          margin: 16
         },
         axisTick: { show: false },
         axisLine: { lineStyle: { color: '#E9ECEF' } }
@@ -543,26 +575,17 @@ Page({
         {
           name: '扣分额',
           type: 'bar',
-          barWidth: 12,
+          barWidth: 10,
           data: deductions.map((value: number, index: number) => ({
             value,
             itemStyle: {
               color: index < 3 
-                ? new (echarts as any).graphic.LinearGradient(0, 0, 1, 0, [
+                ? new echartsGraphic.graphic.LinearGradient(0, 0, 1, 0, [
                     { offset: 0, color: '#3B82F6' },
                     { offset: 1, color: '#6366F1' }
                   ])
                 : '#E9ECEF',
-              borderRadius: [0, 6, 6, 0]
-            },
-            label: {
-              show: true,
-              position: 'insideRight',
-              formatter: '{c}分',
-              fontSize: 10,
-              color: index < 3 ? '#FFFFFF' : '#6B7280',
-              fontWeight: index < 3 ? 'bold' : 'normal',
-              offset: [-8, 0]
+              borderRadius: [0, 4, 4, 0]
             }
           }))
         },
@@ -570,25 +593,26 @@ Page({
           name: '累计占比',
           type: 'line',
           symbol: 'circle',
-          symbolSize: 5,
+          symbolSize: 4,
           data: accumulatedPercents.map((p: number, index: number) => {
             const isLast = index === accumulatedPercents.length - 1;
             const prevP = index > 0 ? accumulatedPercents[index - 1] : 0;
-            const isThresholdCrossed = prevP < 66 && p >= 66;
+            const isThresholdCrossed = prevP < 80 && p >= 80;
             const showLabel = isThresholdCrossed || (isLast && !accumulatedPercents.some((val: number, i: number) => {
               const prev = i > 0 ? accumulatedPercents[i - 1] : 0;
-              return prev < 66 && val >= 66;
+              return prev < 80 && val >= 80;
             }));
             return {
               value: [p, index],
               label: {
                 show: showLabel,
                 formatter: '累计' + p + '%',
-                position: 'right',
-                fontSize: 10,
+                position: ['120%', 0],
+                fontSize: 9,
                 color: '#F59E0B',
                 fontWeight: 'bold',
-                distance: 8
+                fontFamily: 'DIN Alternate, SF Pro Display, -apple-system',
+                distance: 5
               }
             };
           }),
@@ -622,9 +646,10 @@ Page({
     // 引入 echarts 用于创建渐变
     // @ts-ignore
     const echarts = require('../../components/ec-canvas/echarts');
+    const echartsGraphic = echarts as unknown as { graphic: { LinearGradient: new (...args: unknown[]) => unknown } };
 
     const isLowDensity = trendData.length <= 2;
-    const scores = trendData.map((t: any) => t.averageScore);
+    const scores = trendData.map((t: { averageScore: number }) => t.averageScore);
     const minScore = Math.min(...scores);
     const maxScore = Math.max(...scores);
     
@@ -676,7 +701,7 @@ Page({
         },
         xAxis: {
           type: 'category',
-          data: trendData.map((t: any) => t.date.slice(5)),
+          data: trendData.map((t: { date: string }) => t.date.slice(5)),
           axisLine: { lineStyle: { color: '#E9ECEF' } },
           axisTick: { show: false },
           axisLabel: { color: '#9CA3AF', fontSize: 10 }
@@ -716,7 +741,7 @@ Page({
             symbolSize: 6,
             lineStyle: { color: '#3B82F6', width: 2.5 },
             areaStyle: {
-              color: new (echarts as any).graphic.LinearGradient(0, 0, 0, 1, [
+              color: new echartsGraphic.graphic.LinearGradient(0, 0, 0, 1, [
                 { offset: 0, color: 'rgba(59, 130, 246, 0.25)' },
                 { offset: 1, color: 'rgba(59, 130, 246, 0.02)' }
               ])
@@ -753,7 +778,7 @@ Page({
       },
       xAxis: {
         type: 'category',
-        data: trendData.map((t: any) => t.date.slice(5)),
+        data: trendData.map((t: { date: string }) => t.date.slice(5)),
         axisLine: { lineStyle: { color: '#E9ECEF' } },
         axisTick: { show: false },
         axisLabel: { color: '#9CA3AF', fontSize: 10, rotate: 30 }
@@ -790,10 +815,10 @@ Page({
         smooth: true,
         showSymbol: true,
         symbol: 'circle',
-        symbolSize: (data: any, params: any) => params.dataIndex === scores.length - 1 ? 8 : 4,
+        symbolSize: (_data: unknown, params: { dataIndex: number }) => params.dataIndex === scores.length - 1 ? 8 : 4,
         lineStyle: { color: '#3B82F6', width: 2.5 },
         areaStyle: {
-          color: new (echarts as any).graphic.LinearGradient(0, 0, 0, 1, [
+          color: new echartsGraphic.graphic.LinearGradient(0, 0, 0, 1, [
             { offset: 0, color: 'rgba(59, 130, 246, 0.25)' },
             { offset: 1, color: 'rgba(59, 130, 246, 0.02)' }
           ])

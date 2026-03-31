@@ -1,7 +1,26 @@
 // pages/score-success/score-success.ts - 评分提交成功页（备用，评分页已内置成功状态）
+
+interface InspectionDetail {
+  item: string;
+  score: number;
+  images: string[];
+  remark: string;
+}
+
+interface InspectionRecord {
+  _id: string;
+  date: string;
+  checkerName?: string;
+  department: string;
+  room: string;
+  totalScore: number;
+  details?: InspectionDetail[];
+  createdAt?: unknown;
+}
+
 Page({
   data: {
-    inspection: null as any,
+    inspection: null as InspectionRecord | null,
   },
 
   onLoad() {

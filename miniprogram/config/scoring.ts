@@ -41,18 +41,18 @@ export const SCORING_LOW_THRESHOLDS: Record<ScoringItem, number> = {
 };
 
 // 快捷标签配置（统一百分比标准：100%/80%/60%/40%）
-export const QUICK_TAGS: Record<number, Array<{ label: string; value: number }>> = {
+export const QUICK_TAGS: Record<number, Array<{ label: string; value: number; percent: number }>> = {
   20: [
-    { label: '满分', value: 20 },      // 100%
-    { label: '16良好', value: 16 },   // 80%
-    { label: '12一般', value: 12 },   // 60%
-    { label: '8较差', value: 8 },     // 40% - 等于低分阈值，触发备注
+    { label: '满分', value: 20, percent: 100 },      // 100%
+    { label: '16良好', value: 16, percent: 80 },   // 80%
+    { label: '12一般', value: 12, percent: 60 },   // 60%
+    { label: '8较差', value: 8, percent: 40 },     // 40% - 等于低分阈值，触发备注
   ],
   10: [
-    { label: '满分', value: 10 },     // 100%
-    { label: '8良好', value: 8 },      // 80%
-    { label: '6一般', value: 6 },      // 60%
-    { label: '4较差', value: 4 },      // 40% - 等于低分阈值，触发备注
+    { label: '满分', value: 10, percent: 100 },     // 100%
+    { label: '8良好', value: 8, percent: 80 },      // 80%
+    { label: '6一般', value: 6, percent: 60 },      // 60%
+    { label: '4较差', value: 4, percent: 40 },      // 40% - 等于低分阈值，触发备注
   ],
 };
 

@@ -9,14 +9,11 @@ const _ = db.command;
 
 // 引入权限验证模块（需通过 sync-shared.js 同步）
 let verifyAdminPermission;
+let sharedAuthAvailable = true;
 try {
   verifyAdminPermission = require('./shared/auth').verifyAdminPermission;
 } catch (e) {
-  // 如果 shared 目录不存在，使用简化版验证
-  verifyAdminPermission = async function() {
-    console.warn('权限模块未同步，使用简化验证');
-    return { isAdmin: true };
-  };
+  sharedAuthAvailable = false;
 }
 
 // 批量删除集合中的所有数据（使用事务保证原子性）
@@ -67,6 +64,13 @@ exports.main = async (event, context) => {
   
   try {
     // 权限验证（清空数据是敏感操作，必须验证管理员权限）
+    if (!sharedAuthAvailable) {
+      return {
+        success: false,
+        code: 'SHARED_MODULE_MISSING',
+        message: '权限模块未同步，禁止执行清理操作'
+      };
+    }
     try {
       await verifyAdminPermission();
     } catch (authErr) {

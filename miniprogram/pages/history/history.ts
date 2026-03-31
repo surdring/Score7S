@@ -1,21 +1,39 @@
 // pages/history/history.ts - 历史记录页面（分页优化版）
 import { SCORING_MAX_SCORES } from '../../config/scoring';
 
+interface InspectionDetail {
+  item: string;
+  score: number;
+  images: string[];
+  remark: string;
+}
+
+interface InspectionRecord {
+  _id: string;
+  date: string;
+  checkerName?: string;
+  department: string;
+  room: string;
+  totalScore: number;
+  details?: InspectionDetail[];
+  createdAt?: unknown;
+}
+
 Page({
   data: {
     loading: true,
-    inspections: [] as any[],
-    filteredInspections: [] as any[],
+    inspections: [] as InspectionRecord[],
+    filteredInspections: [] as InspectionRecord[],
     // 筛选
     searchKeyword: '',
     selectedDate: '',
     // 详情
-    selectedInspection: null as any,
+    selectedInspection: null as InspectionRecord | null,
     showDetail: false,
     // 导出
     exporting: false,
     // 满分标准（从配置文件导入）
-    scoringMaxScores: SCORING_MAX_SCORES as Record<string, number>,
+    scoringMaxScores: SCORING_MAX_SCORES,
     // 防止重复加载标记
     _initialized: false,
     // 分页相关
@@ -25,7 +43,7 @@ Page({
     loadingMore: false,
   },
 
-  onLoad(options: any) {
+  onLoad(options: { searchKeyword?: string; selectedDate?: string }) {
     // 如果传入搜索关键词或日期，则设置
     const searchKeyword = options.searchKeyword || '';
     const selectedDate = options.selectedDate || '';
@@ -65,7 +83,7 @@ Page({
       if (selectedDate) {
         query = query.where({
           date: selectedDate
-        } as any);
+        } as unknown as Record<string, unknown>);
       }
 
       // 分页查询
@@ -76,7 +94,7 @@ Page({
         .limit(pageSize)
         .get();
 
-      const newInspections = res.data;
+      const newInspections = res.data as unknown as InspectionRecord[];
       
       this.setData({
         inspections: refresh ? newInspections : [...this.data.inspections, ...newInspections],
@@ -88,8 +106,8 @@ Page({
       });
       
       // 如果没有选择日期，默认筛选最新日期
-      if (!this.data.selectedDate && res.data.length > 0) {
-        const latestDate = res.data[0].date;
+      if (!this.data.selectedDate && newInspections.length > 0) {
+        const latestDate = newInspections[0].date;
         this.setData({ selectedDate: latestDate });
       }
       
@@ -106,7 +124,7 @@ Page({
     const { inspections, searchKeyword, selectedDate } = this.data;
     const keyword = searchKeyword.toLowerCase().trim();
 
-    const filtered = inspections.filter((item: any) => {
+    const filtered = inspections.filter((item: InspectionRecord) => {
       // 日期筛选（精确匹配）
       if (selectedDate && item.date !== selectedDate) {
         return false;
@@ -114,7 +132,7 @@ Page({
       // 关键词筛选
       if (keyword) {
         const detailsMatched = Array.isArray(item.details)
-          ? item.details.some((d: any) => {
+          ? item.details.some((d: InspectionDetail) => {
             const detailItem = (d?.item || '').toLowerCase();
             const detailRemark = (d?.remark || '').toLowerCase();
             return detailItem.includes(keyword) || detailRemark.includes(keyword);
@@ -136,13 +154,13 @@ Page({
   },
 
   // 搜索输入
-  onSearchInput(e: any) {
+  onSearchInput(e: { detail: { value: string } }) {
     this.setData({ searchKeyword: e.detail.value });
     this.applyFilter();
   },
 
   // 日期选择
-  onDateChange(e: any) {
+  onDateChange(e: { detail: { value: string } }) {
     const newDate = e.detail.value;
     this.setData({ selectedDate: newDate });
     this.applyFilter();
@@ -153,9 +171,8 @@ Page({
   },
 
   // 查看详情
-  viewDetail(e: any) {
+  viewDetail(e: { currentTarget: { dataset: { id?: string } } }) {
     const { id } = e.currentTarget.dataset;
-    console.log('点击列表项，data-id:', id);
     
     if (!id) {
       console.error('data-id 为空，检查 wxml 绑定');
@@ -163,15 +180,13 @@ Page({
       return;
     }
     
-    const inspection = this.data.filteredInspections.find((item: any) => item._id === id);
-    console.log('找到的记录:', inspection);
+    const inspection = this.data.filteredInspections.find((item: InspectionRecord) => item._id === id);
     
     if (inspection) {
       this.setData({
         selectedInspection: inspection,
         showDetail: true,
       });
-      console.log('弹窗已显示，showDetail:', true);
     } else {
       console.error('未找到对应记录，id:', id);
       wx.showToast({ title: '未找到记录', icon: 'none' });
@@ -187,8 +202,11 @@ Page({
   },
 
   // 预览图片
-  previewImage(e: any) {
+  previewImage(e: { currentTarget: { dataset: { url?: string; urls?: string[] } } }) {
     const { url, urls } = e.currentTarget.dataset;
+    if (!url || !urls || !Array.isArray(urls) || urls.length === 0) {
+      return;
+    }
     wx.previewImage({
       current: url,
       urls: urls,
@@ -214,12 +232,14 @@ Page({
           format: 'xlsx',
           returnContent: true,
         }
-      }) as any;
+      });
 
       wx.hideLoading();
 
-      if (!res.result?.success || !res.result?.xlsxBase64) {
-        wx.showToast({ title: res.result?.message || '导出失败', icon: 'error' });
+      const result = res.result as unknown as { success?: boolean; xlsxBase64?: string; message?: string };
+
+      if (!result?.success || !result?.xlsxBase64) {
+        wx.showToast({ title: result?.message || '导出失败', icon: 'error' });
         return;
       }
 
@@ -228,7 +248,7 @@ Page({
       const fileName = `7S联查评分表_${this.data.selectedDate || '全部'}_${timestamp}.xlsx`;
       const tempPath = `${wx.env.USER_DATA_PATH}/${fileName}`;
       const fs = wx.getFileSystemManager();
-      const buffer = wx.base64ToArrayBuffer(res.result.xlsxBase64);
+      const buffer = wx.base64ToArrayBuffer(result.xlsxBase64);
       fs.writeFileSync(tempPath, buffer);
 
       // 使用文件保存对话框让用户选择保存位置
@@ -236,23 +256,27 @@ Page({
         wx.showSaveFileDialog({
           title: '选择保存位置',
           fileName: fileName,
-          success: (saveRes: any) => {
+          success: (saveRes: { savedFilePath?: string; filePath?: string }) => {
             // 将文件保存到用户选择的位置
             try {
-              fs.saveFileSync(saveRes.savedFilePath, tempPath);
+              const savedPath = saveRes.savedFilePath || saveRes.filePath;
+              if (!savedPath) {
+                throw new Error('未获取到保存路径');
+              }
+              fs.saveFileSync(savedPath, tempPath);
               wx.showToast({ title: '保存成功', icon: 'success' });
               
               // 询问是否打开文件
               wx.showModal({
                 title: '保存成功',
                 content: '文件已保存，是否立即打开？',
-                success: (modalRes: any) => {
+                success: (modalRes: { confirm: boolean; cancel: boolean }) => {
                   if (modalRes.confirm) {
                     wx.openDocument({
-                      filePath: saveRes.savedFilePath,
+                      filePath: savedPath,
                       fileType: 'xlsx',
                       showMenu: true,
-                      fail: (err: any) => {
+                      fail: (err: unknown) => {
                         console.error('打开文档失败', err);
                         wx.showToast({ title: '打开失败', icon: 'none' });
                       }
@@ -265,7 +289,7 @@ Page({
               wx.showToast({ title: '保存失败', icon: 'error' });
             }
           },
-          fail: (err: any) => {
+          fail: (err: unknown) => {
             console.error('选择保存路径失败', err);
             // 用户取消或失败，尝试直接打开临时文件
             wx.openDocument({
@@ -281,10 +305,7 @@ Page({
           filePath: tempPath,
           fileType: 'xlsx',
           showMenu: true,
-          success: () => {
-            console.log('打开文档成功', tempPath);
-          },
-          fail: (err: any) => {
+          fail: (err: unknown) => {
             console.error('打开文档失败', err);
             wx.showToast({ title: '打开失败，可在右上角菜单分享/另存', icon: 'none' });
           }

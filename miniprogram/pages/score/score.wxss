@@ -1,38 +1,46 @@
-/* pages/score/score.wxss */
+/* pages/score/score.wxss - 工业级录入终端 */
 
 .page {
-  padding-bottom: calc(160rpx + env(safe-area-inset-bottom));
+  padding: var(--page-padding);
+  padding-bottom: calc(200rpx + env(safe-area-inset-bottom));
+  background-color: #F5F7FA;
 }
 
-/* 头部 */
+/* ========== 1. 顶部筛选区：卡片式 + 蓝紫渐变 ========== */
 .header {
-  position: sticky;
-  top: 0;
-  z-index: 100;
-  background-color: #FFFFFF;
-  padding: 20rpx 32rpx;
-  border-bottom: 2rpx solid #E5E7EB;
-  box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.05);
+  margin: 0 0 var(--card-gap);
+  border-radius: 24rpx;
+  background: linear-gradient(135deg, #3B82F6 0%, #6366F1 100%);
+  padding: var(--card-padding);
+  box-shadow: 0 8rpx 32rpx rgba(59, 130, 246, 0.25);
 }
 
-.header-top {
+/* 标题区域 */
+.header-title-area {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 20rpx;
+  flex-direction: column;
+  gap: 8rpx;
+  margin-bottom: 24rpx;
 }
 
-/* 已删除头部标题和已评文字样式 */
-.header-title,
-.progress-text {
-  display: none;
+.header-main-title {
+  font-size: 36rpx;
+  font-weight: 700;
+  color: #FFFFFF;
+  line-height: 1.2;
 }
 
-/* 胶囊式选择器 */
+.header-subtitle {
+  font-size: 24rpx;
+  color: rgba(255, 255, 255, 0.6);
+  font-weight: 400;
+}
+
+/* 胶囊式选择器 - 毛玻璃效果 */
 .capsule-row {
   display: flex;
   gap: 16rpx;
-  margin-bottom: 12rpx;
+  margin-bottom: 16rpx;
 }
 
 .capsule-row:last-child {
@@ -48,230 +56,496 @@
   flex: 1;
 }
 
-.capsule-btn {
+/* 毛玻璃胶囊按钮 - 半透明白色 15% */
+.capsule-btn,
+.capsule-btn-static {
   display: flex;
   align-items: center;
-  gap: 8rpx;
-  background-color: #F3F4F6;
-  border-radius: 32rpx;
+  gap: 12rpx;
+  background-color: rgba(255, 255, 255, 0.15);
+  border-radius: 40rpx;
   padding: 16rpx 20rpx;
+  border: 1rpx solid rgba(255, 255, 255, 0.2);
+}
+
+.capsule-btn {
   transition: all 0.2s;
 }
 
 .capsule-btn:active {
-  background-color: #E5E7EB;
+  background-color: rgba(255, 255, 255, 0.25);
   transform: scale(0.98);
 }
 
-.capsule-btn-static {
-  display: flex;
-  align-items: center;
-  gap: 8rpx;
-  background-color: #F9FAFB;
-  border-radius: 32rpx;
-  padding: 16rpx 20rpx;
-}
 
-.capsule-date .capsule-btn-static {
-  border: 1rpx solid #E5E7EB;
-}
 
-.capsule-icon {
-  font-size: 28rpx;
+/* 2px纤细线性白色图标 - 日历 */
+.capsule-date .capsule-icon {
+  width: 20rpx;
+  height: 20rpx;
+  border: 2rpx solid rgba(255, 255, 255, 0.9);
+  border-radius: 4rpx;
+  position: relative;
   flex-shrink: 0;
 }
 
+.capsule-date .capsule-icon::after {
+  content: '';
+  position: absolute;
+  width: 6rpx;
+  height: 2rpx;
+  background: rgba(255, 255, 255, 0.9);
+  top: 4rpx;
+  left: 50%;
+  transform: translateX(-50%);
+  box-shadow: 0 3rpx 0 rgba(255, 255, 255, 0.9);
+}
+
+/* 2px纤细线性白色图标 - 部门/楼栋 */
+.capsule-half:nth-child(2) .capsule-icon {
+  width: 18rpx;
+  height: 16rpx;
+  border: 2rpx solid rgba(255, 255, 255, 0.9);
+  border-radius: 2rpx;
+  position: relative;
+  flex-shrink: 0;
+}
+
+.capsule-half:nth-child(2) .capsule-icon::after {
+  content: '';
+  position: absolute;
+  width: 4rpx;
+  height: 3rpx;
+  background: rgba(255, 255, 255, 0.9);
+  top: -4rpx;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+/* 2px纤细线性白色图标 - 定位 */
+.capsule-full .capsule-icon {
+  width: 16rpx;
+  height: 16rpx;
+  border: 2rpx solid rgba(255, 255, 255, 0.9);
+  border-radius: 50%;
+  position: relative;
+  flex-shrink: 0;
+}
+
+.capsule-full .capsule-icon::after {
+  content: '';
+  position: absolute;
+  width: 2rpx;
+  height: 6rpx;
+  background: rgba(255, 255, 255, 0.9);
+  bottom: -5rpx;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+/* 白色文字 */
 .capsule-text {
   flex: 1;
   font-size: 28rpx;
-  color: #111827;
+  color: rgba(255, 255, 255, 0.95);
   font-weight: 500;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
+/* 白色箭头 */
 .capsule-arrow {
-  font-size: 24rpx;
-  color: #9CA3AF;
+  font-size: 18rpx;
+  color: rgba(255, 255, 255, 0.7);
   flex-shrink: 0;
   margin-left: 4rpx;
 }
 
-/* 底部进度条（已删除） */
-.progress-bar,
-.progress-fill,
-.progress-text-overlay {
-  display: none;
-}
-
-/* 评分列表 */
+/* ========== 2. 打分卡片：沉浸作业风格 ========== */
 .score-list {
-  padding: 24rpx 32rpx;
+  padding: 0 0 40rpx;
 }
 
+/* 评分卡片 - 超大淡阴影 + 增加留白 */
 .score-card {
   background-color: #FFFFFF;
   border-radius: 24rpx;
-  padding: 32rpx;
+  padding: 36rpx 32rpx;
   margin-bottom: 24rpx;
-  box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.05);
+  box-shadow: 0 8rpx 32rpx rgba(0, 0, 0, 0.04);
+  position: relative;
+  overflow: hidden;
 }
 
 .score-header {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: 16rpx;
-  margin-bottom: 24rpx;
+  margin-bottom: 28rpx;
+  padding-left: 8rpx;
 }
 
-.score-number {
-  width: 48rpx;
-  height: 48rpx;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background-color: #DBEAFE;
-  color: #3B82F6;
+/* 蓝色垂直短杠图标 - 分析页同款，作为默认图标 */
+.score-icon {
+  width: 3rpx;
+  height: 24rpx;
+  background: linear-gradient(180deg, #3B82F6 0%, #6366F1 100%);
+  border-radius: 2rpx;
+  flex-shrink: 0;
+  margin-top: 6rpx;
+  position: relative;
+}
+
+/* 地面图标 - 地板/扫帚 */
+.score-item[data-item="地面"] .score-icon {
+  width: 20rpx;
+  height: 20rpx;
+  background: transparent;
+  border: 2rpx solid #3B82F6;
+  border-radius: 2rpx;
+}
+
+.score-item[data-item="地面"] .score-icon::after {
+  content: '';
+  position: absolute;
+  width: 24rpx;
+  height: 2rpx;
+  background: #3B82F6;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+}
+
+/* 桌面摆放图标 - 桌面/显示器 */
+.score-item[data-item="桌面摆放"] .score-icon {
+  width: 22rpx;
+  height: 16rpx;
+  background: transparent;
+  border: 2rpx solid #3B82F6;
+  border-radius: 2rpx;
+}
+
+.score-item[data-item="桌面摆放"] .score-icon::after {
+  content: '';
+  position: absolute;
+  width: 8rpx;
+  height: 4rpx;
+  background: #3B82F6;
+  bottom: -6rpx;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+/* 文件资料图标 - 文档 */
+.score-item[data-item="文件资料"] .score-icon {
+  width: 18rpx;
+  height: 22rpx;
+  background: transparent;
+  border: 2rpx solid #3B82F6;
+  border-radius: 2rpx;
+}
+
+.score-item[data-item="文件资料"] .score-icon::after {
+  content: '';
+  position: absolute;
+  width: 10rpx;
+  height: 2rpx;
+  background: #3B82F6;
+  top: 6rpx;
+  left: 50%;
+  transform: translateX(-50%);
+  box-shadow: 0 5rpx 0 #3B82F6, 0 10rpx 0 #3B82F6;
+}
+
+/* 电器设备图标 - 插头 */
+.score-item[data-item="电器设备"] .score-icon {
+  width: 12rpx;
+  height: 12rpx;
+  background: transparent;
+  border: 2rpx solid #3B82F6;
   border-radius: 50%;
-  font-size: 24rpx;
-  font-weight: 600;
+}
+
+.score-item[data-item="电器设备"] .score-icon::before {
+  content: '';
+  position: absolute;
+  width: 2rpx;
+  height: 10rpx;
+  background: #3B82F6;
+  top: 12rpx;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.score-item[data-item="电器设备"] .score-icon::after {
+  content: '';
+  position: absolute;
+  width: 8rpx;
+  height: 2rpx;
+  background: #3B82F6;
+  top: 20rpx;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+/* 办公椅图标 - 椅子 */
+.score-item[data-item="办公椅"] .score-icon {
+  width: 18rpx;
+  height: 20rpx;
+  background: transparent;
+}
+
+.score-item[data-item="办公椅"] .score-icon::before {
+  content: '';
+  position: absolute;
+  width: 16rpx;
+  height: 10rpx;
+  border: 2rpx solid #3B82F6;
+  border-bottom: none;
+  border-radius: 4rpx 4rpx 0 0;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.score-item[data-item="办公椅"] .score-icon::after {
+  content: '';
+  position: absolute;
+  width: 12rpx;
+  height: 8rpx;
+  border: 2rpx solid #3B82F6;
+  border-top: none;
+  border-radius: 0 0 4rpx 4rpx;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+/* 窗台图标 - 窗户 */
+.score-item[data-item="窗台"] .score-icon {
+  width: 20rpx;
+  height: 18rpx;
+  background: transparent;
+  border: 2rpx solid #3B82F6;
+  border-radius: 2rpx;
+}
+
+.score-item[data-item="窗台"] .score-icon::after {
+  content: '';
+  position: absolute;
+  width: 20rpx;
+  height: 2rpx;
+  background: #3B82F6;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+}
+
+/* 整体印象图标 - 眼睛 */
+.score-item[data-item="整体印象"] .score-icon {
+  width: 22rpx;
+  height: 14rpx;
+  background: transparent;
+  border: 2rpx solid #3B82F6;
+  border-radius: 50% 50% 0 0;
+  border-bottom: none;
+}
+
+.score-item[data-item="整体印象"] .score-icon::after {
+  content: '';
+  position: absolute;
+  width: 6rpx;
+  height: 6rpx;
+  background: #3B82F6;
+  border-radius: 50%;
+  bottom: 2rpx;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.score-title-wrap {
+  flex: 1;
+  min-width: 0;
 }
 
 .score-title {
   font-size: 32rpx;
   font-weight: 600;
   color: #111827;
+  display: block;
+  margin-bottom: 8rpx;
 }
 
-/* 评分标准提示 */
-.score-title-wrap {
-  flex: 1;
-}
-
+/* 标准说明 - 弱化辅助信息 */
 .score-standard {
   display: block;
   font-size: 22rpx;
-  color: #6B7280;
-  margin-top: 8rpx;
+  color: #888888;
   line-height: 1.4;
 }
 
-/* 分数输入区 */
+/* 分数输入区 - 重新布局 */
 .score-input-section {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 20rpx;
+  margin-bottom: 16rpx;
 }
 
 .score-hints {
   flex: 1;
 }
 
+/* 最高分提示 - 弱化位置 */
 .score-max {
   display: block;
-  font-size: 24rpx;
-  color: #6B7280;
-  font-weight: 500;
+  font-size: 22rpx;
+  color: #9CA3AF;
+  font-weight: 400;
 }
 
-/* 步进器 */
+/* 步进器 - DIN字体 + 空心圆形按钮 */
 .stepper-container {
   display: flex;
   align-items: center;
-  gap: 8rpx;
+  gap: 16rpx;
 }
 
 .stepper-btn {
-  width: 72rpx;
-  height: 72rpx;
+  width: 56rpx;
+  height: 56rpx;
   display: flex;
   align-items: center;
   justify-content: center;
-  background-color: #F3F4F6;
-  border-radius: 12rpx;
+  background-color: transparent;
+  border: 2rpx solid #D1D5DB;
+  border-radius: 50%;
   transition: all 0.2s;
 }
 
 .stepper-btn:active {
-  background-color: #E5E7EB;
+  background-color: #F3F4F6;
   transform: scale(0.95);
 }
 
 .stepper-btn.disabled {
-  background-color: #F9FAFB;
+  border-color: #E5E7EB;
   opacity: 0.4;
 }
 
 .stepper-icon {
-  font-size: 32rpx;
-  color: #374151;
+  font-size: 24rpx;
+  color: #4B5563;
   font-weight: 600;
   line-height: 1;
 }
 
+/* 步进器输入框 - DIN字体 Bold + 放大 */
 .stepper-input {
-  width: 100rpx;
-  height: 72rpx;
-  padding: 0 12rpx;
-  background-color: #F9FAFB;
-  border: 2rpx solid #E5E7EB;
-  border-radius: 12rpx;
-  font-size: 36rpx;
-  font-weight: 600;
+  width: 90rpx;
+  height: 64rpx;
+  padding: 0 8rpx;
+  background-color: transparent;
+  border: none;
+  border-bottom: 2rpx solid #E5E7EB;
+  font-size: 48rpx;
+  font-weight: 700;
+  font-family: 'DIN Alternate', 'SF Pro Display', -apple-system, BlinkMacSystemFont, sans-serif;
   color: #111827;
   text-align: center;
   box-sizing: border-box;
 }
 
 .stepper-input:focus {
-  border-color: #3B82F6;
-  background-color: #FFFFFF;
+  border-bottom-color: #3B82F6;
+  outline: none;
 }
 
 .stepper-input.error {
-  border-color: #EF4444;
-  background-color: #FEF2F2;
+  border-bottom-color: #EF4444;
   color: #DC2626;
 }
 
-/* 快捷标签 */
+/* 快捷标签 - 分段选择器样式：1px细线分割 */
 .quick-tags {
   display: flex;
-  flex-wrap: wrap;
-  gap: 12rpx;
-  margin-bottom: 20rpx;
+  gap: 0;
+  margin-bottom: 24rpx;
+  background-color: #F3F4F6;
+  border-radius: 12rpx;
+  padding: 4rpx;
 }
 
 .quick-tag {
-  padding: 12rpx 20rpx;
-  background-color: #F3F4F6;
+  flex: 1;
+  padding: 16rpx 8rpx;
+  background-color: transparent;
   border-radius: 8rpx;
   font-size: 24rpx;
-  color: #4B5563;
+  color: #9CA3AF;
+  text-align: center;
   transition: all 0.2s;
+  border: none;
+  position: relative;
+}
+
+/* 1px细线分割 - 除最后一个外都加右边框 */
+.quick-tag:not(:last-child)::after {
+  content: '';
+  position: absolute;
+  right: 0;
+  top: 25%;
+  bottom: 25%;
+  width: 1rpx;
+  background-color: #E5E7EB;
 }
 
 .quick-tag:active {
-  background-color: #E5E7EB;
   transform: scale(0.98);
 }
 
-.quick-tag.active {
-  background-color: #DBEAFE;
-  color: #3B82F6;
+/* ===== 按百分比统一设置按钮效果 ===== */
+/* 100%满分 - 深蓝 */
+.quick-tag.active[data-percent="100"] {
+  background-color: #3B82F6;
+  color: #FFFFFF;
   font-weight: 500;
+  box-shadow: 0 2rpx 8rpx rgba(59, 130, 246, 0.3);
 }
 
-/* 备注输入 */
+/* 80%良好 - 蓝紫 */
+.quick-tag.active[data-percent="80"] {
+  background-color: #6366F1;
+  color: #FFFFFF;
+  font-weight: 500;
+  box-shadow: 0 2rpx 8rpx rgba(99, 102, 241, 0.3);
+}
+
+/* 60%一般 - 中灰 */
+.quick-tag.active[data-percent="60"] {
+  background-color: #6B7280;
+  color: #FFFFFF;
+  font-weight: 500;
+  box-shadow: 0 2rpx 8rpx rgba(107, 114, 128, 0.3);
+}
+
+/* 40%较差 - 炭黑色 */
+.quick-tag.active[data-percent="40"] {
+  background-color: #2D3436;
+  color: #FFFFFF;
+  font-weight: 500;
+  box-shadow: 0 2rpx 8rpx rgba(45, 52, 54, 0.3);
+}
+
+/* 备注输入 - 极浅灰背景、去边框 */
 .remark-input {
   width: 100%;
   height: 80rpx;
   min-height: 80rpx;
   padding: 16rpx 20rpx;
-  background-color: #F9FAFB;
-  border: 2rpx solid #E5E7EB;
+  background-color: #F8F9FA;
+  border: none;
   border-radius: 12rpx;
   font-size: 28rpx;
   color: #111827;
@@ -280,8 +554,12 @@
   transition: all 0.2s;
 }
 
+.remark-input:focus {
+  background-color: #FFFFFF;
+  box-shadow: 0 2rpx 12rpx rgba(0, 0, 0, 0.06);
+}
+
 .remark-input.required {
-  border-color: #EF4444;
   background-color: #FEF2F2;
 }
 
@@ -301,7 +579,7 @@
   animation: shake 0.4s ease-in-out;
 }
 
-/* 图片上传 */
+/* ========== 3. 图片上传区域：线性相机图标 ========== */
 .image-upload {
   margin-bottom: 16rpx;
 }
@@ -340,6 +618,7 @@
   font-size: 20rpx;
 }
 
+/* 上传按钮 - 虚化边框更淡50% + 线性空心相机 */
 .upload-btn {
   width: 160rpx;
   height: 160rpx;
@@ -347,14 +626,41 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  background-color: #F9FAFB;
-  border: 4rpx dashed #D1D5DB;
+  background-color: #FAFBFC;
+  border: 2rpx dashed #E5E7EB;
   border-radius: 12rpx;
 }
 
+/* 线性空心相机图标 */
 .upload-icon {
-  font-size: 40rpx;
-  margin-bottom: 8rpx;
+  width: 48rpx;
+  height: 40rpx;
+  position: relative;
+  margin-bottom: 12rpx;
+}
+
+.upload-icon::before {
+  content: '';
+  position: absolute;
+  width: 36rpx;
+  height: 24rpx;
+  border: 2rpx solid #9CA3AF;
+  border-radius: 4rpx;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+}
+
+.upload-icon::after {
+  content: '';
+  position: absolute;
+  width: 12rpx;
+  height: 12rpx;
+  border: 2rpx solid #9CA3AF;
+  border-radius: 50%;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
 }
 
 .upload-text {
@@ -375,59 +681,131 @@
   font-size: 28rpx;
 }
 
-/* 提交栏 */
+/* ========== 4. 底部状态条：高级重构版 ========== */
 .submit-bar {
   position: fixed;
-  left: 0;
-  right: 0;
-  bottom: 0;
+  left: 28rpx;
+  right: 28rpx;
+  bottom: calc(30rpx + env(safe-area-inset-bottom));
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 24rpx 32rpx;
-  padding-bottom: calc(24rpx + env(safe-area-inset-bottom));
-  background-color: #FFFFFF;
-  border-top: 2rpx solid #E5E7EB;
-  box-shadow: 0 -8rpx 24rpx rgba(0, 0, 0, 0.05);
+  padding: 16rpx 24rpx 16rpx 40rpx;
+  background-color: rgba(255, 255, 255, 0.9);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border-radius: 56rpx;
+  box-shadow: 0 12rpx 40rpx rgba(0, 0, 0, 0.08);
   z-index: 100;
+  border: 1rpx solid rgba(255, 255, 255, 0.6);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* 左侧区域容器 */
+.bar-left-zone {
+  display: flex;
+  align-items: center;
+  flex: 1;
 }
 
 .total-score {
   display: flex;
-  align-items: baseline;
+  flex-direction: column;
 }
 
 .total-label {
-  font-size: 24rpx;
-  color: #6B7280;
-  margin-right: 8rpx;
+  font-size: 20rpx;
+  color: #9CA3AF;
+  font-weight: 500;
+  letter-spacing: 1rpx;
+}
+
+.score-container {
+  display: flex;
+  align-items: baseline;
 }
 
 .total-value {
-  font-size: 48rpx;
+  font-size: 64rpx;
   font-weight: 700;
-  color: #3B82F6;
+  font-family: 'DIN Alternate', 'SF Pro Display', -apple-system, BlinkMacSystemFont, sans-serif;
+  color: #111827;
+  line-height: 1;
 }
 
 .total-unit {
   font-size: 24rpx;
   color: #6B7280;
-  margin-left: 4rpx;
+  margin-left: 8rpx;
+  font-weight: 600;
 }
 
-.submit-btn {
-  background-color: #3B82F6;
-  color: #FFFFFF;
-  padding: 24rpx 64rpx;
-  border-radius: 16rpx;
-  font-size: 32rpx;
+/* 垂直分割线 */
+.v-divider {
+  width: 1rpx;
+  height: 40rpx;
+  background: rgba(0, 0, 0, 0.08);
+  margin-left: 40rpx;
+}
+
+/* 按钮内容排版 */
+.btn-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.btn-main-text {
+  font-size: 26rpx;
+  font-weight: 700;
+}
+
+.btn-sub-text {
+  font-size: 26rpx;
   font-weight: 500;
-  border: none;
 }
 
-.submit-btn.disabled {
-  background-color: #E5E7EB;
-  color: #9CA3AF;
+/* 按钮样式：对齐标杆页的深蓝渐变 */
+.submit-btn,
+button.submit-btn {
+  background: linear-gradient(135deg, #3B82F6 0%, #6366F1 100%) !important;
+  color: #FFFFFF !important;
+  width: 240rpx !important;
+  height: 88rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 44rpx;
+  font-size: 30rpx;
+  font-weight: 600;
+  box-shadow: 0 8rpx 20rpx rgba(59, 130, 246, 0.3);
+  margin: 0 !important;
+  border: none !important;
+  transition: all 0.2s;
+}
+
+.submit-btn:active {
+  transform: scale(0.96);
+  box-shadow: 0 4rpx 12rpx rgba(59, 130, 246, 0.2);
+}
+
+/* 未完成状态的逻辑处理 */
+.submit-bar.incomplete .total-value {
+  color: #D1D5DB;
+}
+
+/* 禁用态：浅蓝莫兰迪风格 */
+.submit-btn.disabled,
+button.submit-btn.disabled,
+.submit-btn[disabled],
+button.submit-btn[disabled] {
+  background: #EFF6FF !important;
+  color: #3B82F6 !important;
+  box-shadow: none !important;
+  opacity: 1 !important;
+  border: none !important;
+  font-weight: 500;
 }
 
 /* 成功页 */

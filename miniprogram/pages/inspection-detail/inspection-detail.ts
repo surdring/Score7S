@@ -1,7 +1,26 @@
 // pages/inspection-detail/inspection-detail.ts - 检查记录详情页
+
+interface InspectionDetail {
+  item: string;
+  score: number;
+  images: string[];
+  remark: string;
+}
+
+interface InspectionRecord {
+  _id: string;
+  date: string;
+  checkerName?: string;
+  department: string;
+  room: string;
+  totalScore: number;
+  details?: InspectionDetail[];
+  createdAt?: unknown;
+}
+
 Page({
   data: {
-    inspection: null as any,
+    inspection: null as InspectionRecord | null,
     loading: true,
   },
 
@@ -21,8 +40,11 @@ Page({
   },
 
   // 预览图片
-  previewImage(e: any) {
+  previewImage(e: { currentTarget: { dataset: { url?: string; urls?: string[] } } }) {
     const { url, urls } = e.currentTarget.dataset;
+    if (!url || !urls || !Array.isArray(urls) || urls.length === 0) {
+      return;
+    }
     wx.previewImage({
       current: url,
       urls: urls,

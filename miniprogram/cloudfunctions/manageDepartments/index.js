@@ -9,14 +9,11 @@ const db = cloud.database();
 
 // 引入权限验证模块（需通过 sync-shared.js 同步）
 let verifyAdminPermission;
+let sharedAuthAvailable = true;
 try {
   verifyAdminPermission = require('./shared/auth').verifyAdminPermission;
 } catch (e) {
-  // 如果 shared 目录不存在，使用简化版验证
-  verifyAdminPermission = async function() {
-    console.warn('权限模块未同步，使用简化验证');
-    return { isAdmin: true };
-  };
+  sharedAuthAvailable = false;
 }
 
 function normalizeText(v) {
@@ -86,6 +83,14 @@ async function batchUpsertDepartments(departments) {
   let inserted = 0;
   let updated = 0;
 
+  // 预取现有部门，避免 N+1 查询
+  const existingRes = await db.collection('departments').get();
+  const existingByName = new Map();
+  (existingRes.data || []).forEach((d) => {
+    const n = normalizeText(d.name);
+    if (n) existingByName.set(n, d);
+  });
+
   // 分批处理（云函数/数据库限制）
   const chunkSize = 50;
   for (let i = 0; i < departments.length; i += chunkSize) {
@@ -98,10 +103,10 @@ async function batchUpsertDepartments(departments) {
       const order = typeof dept.order === 'number' ? dept.order : i + idx + 1;
       if (!name) continue;
 
-      // 查询是否已存在
-      const existed = await db.collection('departments').where({ name }).limit(1).get();
-      if (existed.data && existed.data.length > 0) {
-        const id = existed.data[0]._id;
+      // 判断是否已存在（内存 Map）
+      const existed = existingByName.get(name);
+      if (existed && existed._id) {
+        const id = existed._id;
         // 更新现有部门
         promises.push(
           db.collection('departments').doc(id).update({
@@ -122,7 +127,10 @@ async function batchUpsertDepartments(departments) {
               createdAt: db.serverDate(),
               updatedAt: db.serverDate(),
             }
-          }).then(() => { inserted++; })
+          }).then((res) => {
+            inserted++;
+            existingByName.set(name, { _id: res._id, name, order });
+          })
         );
       }
     }
@@ -142,6 +150,13 @@ exports.main = async (event, context) => {
     // 权限验证（list 和 get 操作跳过验证，允许只读访问）
     const needsAuth = !['list', 'get'].includes(action);
     if (needsAuth) {
+      if (!sharedAuthAvailable) {
+        return {
+          success: false,
+          code: 'SHARED_MODULE_MISSING',
+          message: '权限模块未同步，禁止执行写入操作'
+        };
+      }
       try {
         await verifyAdminPermission();
       } catch (authErr) {

@@ -33,9 +33,12 @@ export function getScoreColor(score: number): string {
 /**
  * 防抖函数
  */
-export function debounce(fn: Function, delay: number = 300): Function {
+export function debounce<TThis, TArgs extends unknown[]>(
+  fn: (this: TThis, ...args: TArgs) => void,
+  delay: number = 300
+): (this: TThis, ...args: TArgs) => void {
   let timer: number | null = null;
-  return function(this: any, ...args: any[]) {
+  return function (this: TThis, ...args: TArgs) {
     if (timer) clearTimeout(timer);
     timer = setTimeout(() => {
       fn.apply(this, args);
@@ -46,9 +49,12 @@ export function debounce(fn: Function, delay: number = 300): Function {
 /**
  * 节流函数
  */
-export function throttle(fn: Function, delay: number = 300): Function {
+export function throttle<TThis, TArgs extends unknown[]>(
+  fn: (this: TThis, ...args: TArgs) => void,
+  delay: number = 300
+): (this: TThis, ...args: TArgs) => void {
   let lastTime = 0;
-  return function(this: any, ...args: any[]) {
+  return function (this: TThis, ...args: TArgs) {
     const now = Date.now();
     if (now - lastTime >= delay) {
       fn.apply(this, args);

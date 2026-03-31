@@ -1,28 +1,41 @@
 <!--pages/history/history.wxml-->
 <view class="container">
-  <!-- 筛选区域 -->
-  <view class="filter-section">
+  <!-- 顶部Header - 卡片式蓝紫渐变 -->
+  <view class="header">
+    <view class="header-content">
+      <!-- 左侧标题 -->
+      <view class="header-title-area">
+        <text class="header-main-title">评分记录查询</text>
+        <text class="header-subtitle">支持关键词检索与一键导出</text>
+      </view>
+    </view>
+    
+    <!-- 搜索框 - 胶囊半透明 -->
     <view class="search-box">
-      <text class="search-icon">🔍</text>
+      <view class="search-icon"></view>
       <input 
         class="search-input"
         placeholder="搜索部门、检查员..."
+        placeholder-style="color: rgba(255,255,255,0.6); font-size: 28rpx; letter-spacing: 1rpx;"
         value="{{searchKeyword}}"
         bindinput="onSearchInput"
       />
     </view>
+    
+    <!-- 筛选行：日期 + 导出 -->
     <view class="filter-row">
       <view class="date-picker">
-        <text class="picker-icon">📅</text>
+        <view class="picker-icon"></view>
         <picker mode="date" value="{{selectedDate}}" bindchange="onDateChange">
           <view class="picker-value {{selectedDate ? '' : 'placeholder'}}">{{selectedDate || '选择日期'}}</view>
         </picker>
+        <text class="picker-arrow">▾</text>
       </view>
       <view 
         class="export-btn-light {{filteredInspections.length === 0 || exporting ? 'disabled' : ''}}"
         bindtap="exportData"
       >
-        <text class="export-icon">📥</text>
+        <view class="export-icon"></view>
         <text>导出</text>
       </view>
     </view>
@@ -33,10 +46,14 @@
     <view class="loading-spinner"></view>
   </view>
 
-  <!-- 无数据 -->
+  <!-- 无数据 - 线性插画风格 -->
   <view wx:elif="{{filteredInspections.length === 0}}" class="empty-state">
-    <text class="empty-icon">📭</text>
-    <text class="empty-text">没有找到相关记录</text>
+    <view class="empty-illustration">
+      <view class="folder-icon"></view>
+      <view class="search-line"></view>
+    </view>
+    <text class="empty-text">暂无历史记录</text>
+    <text class="empty-hint">当前日期范围内没有检查数据</text>
   </view>
 
   <!-- 列表 -->
@@ -44,24 +61,27 @@
     <view 
       wx:for="{{filteredInspections}}" 
       wx:key="_id" 
-      class="list-item"
+      class="list-item {{item.totalScore === 100 ? 'perfect' : (item.totalScore >= 80 ? 'good' : 'normal')}}"
       bindtap="viewDetail"
       data-id="{{item._id}}"
     >
-      <view class="item-icon">
-        <text>🏢</text>
-      </view>
+      <!-- 左侧色条 -->
+      <view class="color-bar {{item.totalScore === 100 ? 'perfect' : (item.totalScore >= 80 ? 'good' : 'normal')}}"></view>
+      
       <view class="item-content">
-        <text class="item-dept">{{item.department}}</text>
         <text class="item-room">{{item.room}}</text>
+        <text class="item-dept">{{item.department}}</text>
         <view class="item-meta">
           <text>{{item.date}}</text>
-          <text>•</text>
-          <text>检查员: {{item.checkerName || '匿名'}}</text>
+          <text class="meta-dot">•</text>
+          <text>{{item.checkerName || '匿名检查员'}}</text>
         </view>
       </view>
+      
       <view class="item-right">
-        <text class="item-score">{{item.totalScore}}分</text>
+        <view class="score-section">
+          <text class="item-score {{item.totalScore === 100 ? 'perfect' : (item.totalScore >= 80 ? 'good' : 'normal')}}">{{item.totalScore}}</text>
+        </view>
         <text class="item-arrow">›</text>
       </view>
     </view>
@@ -85,7 +105,7 @@
     </view>
 
     <scroll-view scroll-y class="modal-body">
-      <text class="detail-title">打分明细</text>
+      <text class="detail-title">评分明细</text>
       <view class="detail-list">
         <view wx:for="{{selectedInspection.details}}" wx:key="item" class="detail-card">
           <view class="detail-header">

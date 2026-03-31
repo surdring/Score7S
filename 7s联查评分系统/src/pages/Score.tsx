@@ -11,10 +11,29 @@ const SCORING_ITEMS = [
   '地面',
   '窗台',
   '文件资料',
-  '电脑设备',
+  '电器设备',
   '办公椅',
   '整体印象'
-];
+] as const;
+
+type ScoringItem = (typeof SCORING_ITEMS)[number];
+
+type ScoreItem = {
+  score: number | null;
+  images: string[];
+  remark: string;
+};
+
+type SubmittedInspection = {
+  id: string;
+  date: string;
+  checkerId?: string;
+  checkerName: string;
+  department: string;
+  room: string;
+  totalScore: number;
+  details: Array<{ item: string; score: number; images: string[]; remark: string }>;
+};
 
 const SCORE_OPTIONS = [10, 8, 4, 2];
 
@@ -31,16 +50,16 @@ export default function Score() {
   const [selectedRoom, setSelectedRoom] = useState('');
   const [date, setDate] = useState(format(new Date(), 'yyyy-MM-dd'));
   
-  const [scores, setScores] = useState<Record<string, { score: number | null; images: string[]; remark: string }>>(() => {
-    const initial: any = {};
-    SCORING_ITEMS.forEach(item => {
+  const [scores, setScores] = useState<Record<ScoringItem, ScoreItem>>(() => {
+    const initial = {} as Record<ScoringItem, ScoreItem>;
+    SCORING_ITEMS.forEach((item) => {
       initial[item] = { score: null, images: [], remark: '' };
     });
     return initial;
   });
 
   const [submitting, setSubmitting] = useState(false);
-  const [submittedData, setSubmittedData] = useState<any | null>(null);
+  const [submittedData, setSubmittedData] = useState<SubmittedInspection | null>(null);
   const [showDetails, setShowDetails] = useState(false);
 
   useEffect(() => {
@@ -48,20 +67,6 @@ export default function Score() {
       const snapshot = await getDocs(collection(db, 'departments'));
       let depts = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Department));
       
-      if (depts.length === 0) {
-        // Seed default departments
-        const defaultDepts = [
-          { name: '经营管控中心', rooms: ['南面1楼', '北面2楼'] },
-          { name: '供应一部', rooms: ['业务员大办公室(2楼)', '经理室(2楼)'] },
-          { name: '财务部', rooms: ['财务大厅(3楼)', '结算室(3楼)'] }
-        ];
-        
-        for (const dept of defaultDepts) {
-          const docRef = await addDoc(collection(db, 'departments'), dept);
-          depts.push({ id: docRef.id, ...dept });
-        }
-      }
-
       setDepartments(depts);
       if (depts.length > 0) {
         setSelectedDept(depts[0].name);
@@ -73,21 +78,21 @@ export default function Score() {
     fetchDepartments();
   }, []);
 
-  const handleScoreChange = (item: string, score: number) => {
+  const handleScoreChange = (item: ScoringItem, score: number) => {
     setScores(prev => ({
       ...prev,
       [item]: { ...prev[item], score }
     }));
   };
 
-  const handleRemarkChange = (item: string, remark: string) => {
+  const handleRemarkChange = (item: ScoringItem, remark: string) => {
     setScores(prev => ({
       ...prev,
       [item]: { ...prev[item], remark }
     }));
   };
 
-  const handleImagesChange = (item: string, images: string[]) => {
+  const handleImagesChange = (item: ScoringItem, images: string[]) => {
     setScores(prev => ({
       ...prev,
       [item]: { ...prev[item], images }
@@ -95,7 +100,7 @@ export default function Score() {
   };
 
   const calculateTotal = () => {
-    return Object.values(scores).reduce((sum, current) => sum + (current.score || 0), 0);
+    return (Object.values(scores) as ScoreItem[]).reduce((sum, current) => sum + (current.score || 0), 0);
   };
 
   const validateForm = () => {
@@ -172,8 +177,8 @@ export default function Score() {
   const resetForm = () => {
     setSubmittedData(null);
     setShowDetails(false);
-    const initial: any = {};
-    SCORING_ITEMS.forEach(item => {
+    const initial = {} as Record<ScoringItem, ScoreItem>;
+    SCORING_ITEMS.forEach((item) => {
       initial[item] = { score: null, images: [], remark: '' };
     });
     setScores(initial);
@@ -242,7 +247,7 @@ export default function Score() {
 
               <div className="p-4 overflow-y-auto flex-1 space-y-4">
                 <h4 className="font-bold text-gray-900 mb-2">打分明细</h4>
-                {submittedData.details.map((detail: any, idx: number) => (
+                {submittedData.details.map((detail, idx: number) => (
                   <div key={idx} className="bg-white rounded-xl p-4 border border-gray-100 shadow-sm">
                     <div className="flex justify-between items-center mb-2">
                       <span className="font-medium text-gray-900">{detail.item}</span>

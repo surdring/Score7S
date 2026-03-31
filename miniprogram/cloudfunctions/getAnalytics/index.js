@@ -9,22 +9,33 @@ const db = cloud.database();
 const _ = db.command;
 const $ = db.command.aggregate;
 
-// 评分项满分配置（与前端 config/scoring.ts 保持一致）
-const SCORING_MAX_SCORES = {
-  '地面': 20,
-  '桌面摆放': 20,
-  '文件资料': 10,
-  '电器设备': 20,
-  '办公椅': 10,
-  '窗台': 10,
-  '整体印象': 10,
-};
-const TOTAL_MAX_SCORE = 100;
+let sharedConstants;
+try {
+  sharedConstants = require('./shared/constants');
+} catch (e) {
+  sharedConstants = null;
+}
+
+const SCORING_MAX_SCORES = sharedConstants?.SCORING_MAX_SCORES;
+const TOTAL_MAX_SCORE = sharedConstants?.TOTAL_MAX_SCORE;
 const PASS_THRESHOLD = 60; // 达标阈值（得分率60%）
+
+function makeRequestId() {
+  return `${Date.now()}_${Math.random().toString(16).slice(2)}`;
+}
 
 // 云函数入口函数
 exports.main = async (event, context) => {
+  const requestId = makeRequestId();
   try {
+    if (!SCORING_MAX_SCORES || !TOTAL_MAX_SCORE) {
+      return {
+        success: false,
+        code: 'SHARED_MODULE_MISSING',
+        message: '评分常量模块未同步，无法获取分析数据',
+        requestId
+      };
+    }
     // 支持自定义日期范围，默认最近 30 天
     const { dateRange = 30 } = event;
 
@@ -188,6 +199,8 @@ exports.main = async (event, context) => {
       .sort((a, b) => a.totalScore - b.totalScore);
 
     return {
+      success: true,
+      requestId,
       // 原有数据（兼容）
       trendData,
       deptData,
@@ -203,6 +216,11 @@ exports.main = async (event, context) => {
     };
   } catch (err) {
     console.error('获取分析数据失败', err);
-    throw err;
+    return {
+      success: false,
+      code: 'ANALYTICS_FAILED',
+      message: err && err.message ? err.message : '获取分析数据失败',
+      requestId
+    };
   }
 };

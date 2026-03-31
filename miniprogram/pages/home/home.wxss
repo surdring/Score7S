@@ -1,66 +1,111 @@
-/* pages/home/home.wxss */
+/* pages/home/home.wxss - 7S联查看板仪表盘 */
 
 .container {
-  padding: 32rpx;
-  padding-bottom: env(safe-area-inset-bottom);
+  padding-bottom: calc(env(safe-area-inset-bottom) + 120rpx);
+  background-color: #F5F7FA;
 }
 
-/* 头部样式 */
+/* ========== 1. 顶部Header：蓝紫渐变 + 卡片式 + 标题布局 ========== */
 .header {
-  display: flex;
-  align-items: center;
-  padding: 24rpx 32rpx;
-  margin-bottom: 32rpx;
+  padding: var(--card-padding);
+  margin: 0 0 var(--card-gap);
   background: linear-gradient(135deg, #3B82F6 0%, #6366F1 100%);
-  border-radius: 32rpx;
-  color: #FFFFFF;
+  border-radius: 24rpx;
+  box-shadow: 0 8rpx 32rpx rgba(59, 130, 246, 0.25);
 }
 
 .header-content {
-  flex: 1;
   display: flex;
   justify-content: space-between;
   align-items: center;
 }
 
-/* 已删除重复标题样式 */
-.header-title {
-  display: none;
+/* 左侧标题区域 */
+.header .header-left {
+  display: flex;
+  flex-direction: column;
+  gap: 8rpx;
+  align-items: flex-start;
+  text-align: left;
 }
 
 .header-title {
   display: block;
-  font-size: 40rpx;
-  font-weight: 600;
-  margin-bottom: 8rpx;
-}
-
-.header-title-row {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
   width: 100%;
-}
-
-.admin-link {
-  font-size: 24rpx;
-  color: rgba(255, 255, 255, 0.9);
-  background: rgba(255, 255, 255, 0.2);
-  padding: 10rpx 20rpx;
-  border-radius: 20rpx;
-  font-weight: normal;
-  margin-left: 16rpx;
+  text-align: left;
+  font-size: 36rpx;
+  font-weight: 700;
+  color: #FFFFFF;
+  line-height: 1.2;
 }
 
 .header-subtitle {
   display: block;
-  font-size: 26rpx;
-  opacity: 0.9;
+  width: 100%;
+  text-align: left;
+  font-size: 24rpx;
+  color: rgba(255, 255, 255, 0.6);
+  font-weight: 400;
 }
 
-/* 区块样式 */
+/* 日期选择器 - 胶囊样式 */
+.date-selector {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.date-picker-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 12rpx;
+  background: rgba(255, 255, 255, 0.15);
+  padding: 14rpx 20rpx;
+  border-radius: 32rpx;
+  border: 1rpx solid rgba(255, 255, 255, 0.2);
+  transition: all 0.2s;
+}
+
+.date-picker-btn:active {
+  background: rgba(255, 255, 255, 0.25);
+  transform: scale(0.98);
+}
+
+/* 线性日历图标 */
+.date-icon {
+  width: 20rpx;
+  height: 20rpx;
+  border: 2rpx solid rgba(255, 255, 255, 0.9);
+  border-radius: 4rpx;
+  position: relative;
+  flex-shrink: 0;
+}
+
+.date-icon::after {
+  content: '';
+  position: absolute;
+  width: 6rpx;
+  height: 2rpx;
+  background: rgba(255, 255, 255, 0.9);
+  top: 4rpx;
+  left: 50%;
+  transform: translateX(-50%);
+  box-shadow: 0 3rpx 0 rgba(255, 255, 255, 0.9);
+}
+
+.date-text {
+  font-size: 26rpx;
+  color: #FFFFFF;
+  font-weight: 500;
+}
+
+.date-arrow {
+  font-size: 18rpx;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+/* ========== 2. 栏目标题：极简线性图标 ========== */
 .section {
-  margin-bottom: 48rpx;
+  margin-bottom: 40rpx;
 }
 
 .section-header {
@@ -68,36 +113,88 @@
   align-items: center;
   gap: 16rpx;
   margin-bottom: 24rpx;
+  padding: 0 4rpx;
 }
 
-.section-icon {
-  width: 64rpx;
-  height: 64rpx;
+.section-header .header-left {
   display: flex;
   align-items: center;
-  justify-content: center;
-  border-radius: 16rpx;
-  font-size: 32rpx;
+  gap: 12rpx;
 }
 
+/* 已删除.section-bar样式 - 深蓝垂直装饰线已移除 */
+
+/* 线性图标 - 红榜：靶心 (珊瑚浅红) */
 .section-icon.red {
-  background-color: #FED7AA;
+  width: 32rpx;
+  height: 32rpx;
+  position: relative;
 }
 
+.section-icon.red::before {
+  content: '';
+  position: absolute;
+  width: 24rpx;
+  height: 24rpx;
+  border: 2rpx solid #F87171;
+  border-radius: 50%;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+}
+
+.section-icon.red::after {
+  content: '';
+  position: absolute;
+  width: 6rpx;
+  height: 6rpx;
+  background: #F87171;
+  border-radius: 50%;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+}
+
+/* 线性图标 - 黑榜：放大镜 (炭黑色) */
 .section-icon.black {
-  background-color: #FECACA;
+  width: 32rpx;
+  height: 32rpx;
+  position: relative;
+}
+
+.section-icon.black::before {
+  content: '';
+  position: absolute;
+  width: 18rpx;
+  height: 18rpx;
+  border: 2rpx solid #2D3436;
+  border-radius: 50%;
+  top: 6rpx;
+  left: 4rpx;
+}
+
+.section-icon.black::after {
+  content: '';
+  position: absolute;
+  width: 2rpx;
+  height: 10rpx;
+  background: #2D3436;
+  bottom: 4rpx;
+  right: 6rpx;
+  transform: rotate(-45deg);
 }
 
 .section-title {
-  font-size: 34rpx;
-  font-weight: 600;
+  font-size: 32rpx;
+  font-weight: 700;
   color: #111827;
 }
 
-.section-badge {
-  font-size: 24rpx;
-  color: #6B7280;
+.section-subtitle {
+  font-size: 22rpx;
+  color: #9CA3AF;
   margin-left: auto;
+  font-weight: 400;
 }
 
 /* 空状态卡片 */
@@ -129,151 +226,246 @@
   color: #9CA3AF;
 }
 
-/* 排行榜列表 */
+/* ========== 3. 红黑榜卡片：办公室粒度 + 背景数字 ========== */
+
+/* 排行榜列表 - 20rpx间距 */
 .rank-list {
   display: flex;
   flex-direction: column;
   gap: 20rpx;
 }
 
+/* 排行榜卡片 - 超大淡阴影 */
 .rank-card {
   display: flex;
   align-items: center;
-  gap: 24rpx;
-  padding: 28rpx 32rpx;
+  padding: 0;
   background-color: #FFFFFF;
-  border-radius: 24rpx;
-  box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.05);
+  border-radius: 16rpx;
+  box-shadow: 0 10rpx 40rpx rgba(0, 0, 0, 0.03);
+  position: relative;
+  overflow: hidden;
 }
 
+/* 3px极简直线 - 红榜珊瑚浅红 */
+.rank-card.red::before,
+.rank-card.perfect::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 3rpx;
+  background: #F87171;
+}
+
+/* 3px极简直线 - 黑榜炭黑 */
+.rank-card.black::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 3rpx;
+  background: #2D3436;
+}
+
+/* 红榜卡片：淡粉背景 */
 .rank-card.red {
-  border: 2rpx solid #A7F3D0;
-  background: linear-gradient(135deg, #FFFFFF 0%, #ECFDF5 100%);
+  background: linear-gradient(90deg, #FFF5F5 0%, #FFFFFF 30%);
 }
 
-.rank-card.black {
-  border: 2rpx solid #FECACA;
-  background: linear-gradient(135deg, #FFFFFF 0%, #FEF2F2 100%);
-}
-
-.rank-card.clickable {
-  cursor: pointer;
+/* 满分卡片：珊瑚红发光侧边条 */
+.rank-card.perfect::before {
+  box-shadow: 0 0 20rpx rgba(248, 113, 113, 0.4);
 }
 
 .rank-card.clickable:active {
-  background-color: #FEF2F2;
+  background-color: #F9FAFB;
+  transform: scale(0.995);
 }
 
-/* 排名数字 */
-.rank-number {
-  width: 72rpx;
-  height: 72rpx;
+/* 背景数字 - 提升可见度，平衡简约与可读性 */
+.rank-number-bg {
+  width: 100rpx;
+  min-width: 100rpx;
+  text-align: center;
+  font-size: 64rpx;
+  font-weight: 700;
+  font-family: 'DIN Alternate', 'SF Pro Display', -apple-system, BlinkMacSystemFont, sans-serif;
+  color: rgba(248, 113, 113, 0.2);
+  flex-shrink: 0;
+  padding: 0 16rpx;
+  line-height: 1;
+}
+
+/* 黑榜排名数字 - 炭黑色15%透明度 */
+.rank-number-bg.danger {
+  color: rgba(45, 52, 54, 0.15);
+}
+
+/* 第一名特殊处理 - 极淡圆形底色突出状元地位 */
+.rank-card:first-child .rank-number-bg {
+  position: relative;
+}
+
+.rank-card:first-child .rank-number-bg::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 70rpx;
+  height: 70rpx;
+  border-radius: 50%;
+  background: rgba(248, 113, 113, 0.06);
+  z-index: -1;
+}
+
+.rank-card.black:first-child .rank-number-bg::before {
+  background: rgba(45, 52, 54, 0.04);
+}
+
+/* 卡片内容区域 */
+.card-content {
+  flex: 1;
   display: flex;
   align-items: center;
-  justify-content: center;
-  border-radius: 50%;
-  font-size: 36rpx;
-  font-weight: 600;
+  padding: 24rpx 28rpx 24rpx 12rpx;
+  min-width: 0;
 }
 
-.rank-number.gold {
-  background: linear-gradient(135deg, #FFD700 0%, #FFA500 100%);
-  color: #FFFFFF;
-}
-
-.rank-number.silver {
-  background: linear-gradient(135deg, #C0C0C0 0%, #A0A0A0 100%);
-  color: #FFFFFF;
-}
-
-.rank-number.bronze {
-  background: linear-gradient(135deg, #CD7F32 0%, #B87333 100%);
-  color: #FFFFFF;
-}
-
-.rank-number.danger {
-  background-color: #FEE2E2;
-  color: #DC2626;
-  border: 2rpx solid #FECACA;
-}
-
-/* 排名信息 */
+/* 排名信息 - 办公室主标题 + 部门辅助 */
 .rank-info {
   flex: 1;
+  min-width: 0;
 }
 
-.rank-dept {
+/* 办公室名称 - 主标题 (15px/30rpx) */
+.rank-office {
   display: block;
-  font-size: 32rpx;
+  font-size: 30rpx;
   font-weight: 600;
   color: #111827;
   margin-bottom: 6rpx;
+  line-height: 1.4;
+  word-wrap: break-word;
+  word-break: break-all;
 }
 
-.rank-room {
+/* 部门名称 - 辅助标签 (12px/24rpx，钛灰) */
+.rank-dept {
   display: block;
   font-size: 24rpx;
-  color: #6B7280;
+  color: #636E72;
+  line-height: 1.3;
 }
 
-/* 分数 */
+/* 分数 - DIN字体，裸奔大数字 */
 .rank-score {
-  display: flex;
-  align-items: baseline;
-}
-
-.rank-score.red .score-value {
+  min-width: 100rpx;
+  text-align: right;
   font-size: 44rpx;
-  font-weight: 700;
-  color: #059669;
+  font-weight: 600;
+  font-family: 'DIN Alternate', 'SF Pro Display', -apple-system, BlinkMacSystemFont, sans-serif;
+  flex-shrink: 0;
+  margin-left: 16rpx;
 }
 
-.rank-score.red .score-label {
-  font-size: 24rpx;
-  color: #059669;
-  margin-left: 4rpx;
+/* 红榜分数 - 珊瑚浅红 */
+.rank-score.red,
+.rank-score.perfect {
+  color: #F87171;
 }
 
+/* 黑榜分数 - 炭黑色 */
 .rank-score.black {
-  font-size: 44rpx;
-  font-weight: 700;
-  color: #991B1B;
+  color: #2D3436;
 }
 
-.rank-score-container {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  gap: 8rpx;
-}
-
-.view-detail-arrow {
-  font-size: 40rpx;
+/* 榜单底部备注 */
+.rank-footer {
+  padding: 16rpx 24rpx;
+  font-size: 22rpx;
   color: #9CA3AF;
-  font-weight: 300;
-  margin-left: 8rpx;
+  text-align: center;
 }
 
-/* 黑榜少于3个时的说明 */
-.blacklist-hint {
+/* ========== 4. 今日管理速报卡片（莫兰迪配色） ========== */
+.insight-card {
+  margin: 40rpx 0 48rpx 0;
+  padding: 28rpx 32rpx;
+  background: linear-gradient(135deg, #FFF5F5 0%, #FFFFFF 100%);
+  border-radius: 16rpx;
+  border-left: 3rpx solid #F87171;
+  box-shadow: 0 10rpx 40rpx rgba(0, 0, 0, 0.03);
+}
+
+.insight-header {
   display: flex;
   align-items: center;
-  justify-content: center;
   gap: 12rpx;
-  padding: 24rpx 32rpx;
-  margin-top: 8rpx;
-  background-color: #FEF2F2;
-  border-radius: 16rpx;
-  border: 2rpx dashed #FECACA;
+  margin-bottom: 16rpx;
 }
 
-.hint-icon {
+/* 线性灯泡图标 (珊瑚浅红) */
+.insight-icon {
+  width: 32rpx;
+  height: 32rpx;
+  position: relative;
+}
+
+.insight-icon::before {
+  content: '';
+  position: absolute;
+  width: 20rpx;
+  height: 20rpx;
+  border: 2rpx solid #F87171;
+  border-radius: 50%;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.insight-icon::after {
+  content: '';
+  position: absolute;
+  width: 8rpx;
+  height: 6rpx;
+  border: 2rpx solid #F87171;
+  border-top: none;
+  border-radius: 0 0 4rpx 4rpx;
+  bottom: 2rpx;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.insight-title {
   font-size: 28rpx;
+  font-weight: 600;
+  color: #F87171;
 }
 
-.hint-text {
-  font-size: 24rpx;
-  color: #9CA3AF;
+.insight-content {
+  font-size: 26rpx;
+  color: #4B5563;
+  line-height: 1.8;
+}
+
+/* 可点击办公室名 - 炭黑强调 */
+.office-highlight {
+  color: #2D3436;
+  font-weight: 600;
+}
+
+.office-highlight:active {
+  opacity: 0.7;
+}
+
+/* 数量高亮 - 珊瑚浅红 */
+.count-highlight {
+  color: #F87171;
+  font-weight: 600;
 }
 
 /* 模态框 */
@@ -504,35 +696,6 @@
 .empty-status-icon {
   font-size: 80rpx;
   margin-bottom: 24rpx;
-}
-
-/* 日期选择器样式 */
-.date-selector {
-  display: flex;
-  justify-content: flex-start;
-}
-
-.date-picker-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 12rpx;
-  background: rgba(255, 255, 255, 0.2);
-  padding: 12rpx 24rpx;
-  border-radius: 24rpx;
-}
-
-.date-icon {
-  font-size: 24rpx;
-}
-
-.date-text {
-  font-size: 24rpx;
-  color: rgba(255, 255, 255, 0.95);
-}
-
-.date-arrow {
-  font-size: 20rpx;
-  color: rgba(255, 255, 255, 0.7);
 }
 
 /* 密码弹窗样式 */

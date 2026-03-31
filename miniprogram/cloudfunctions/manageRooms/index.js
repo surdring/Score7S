@@ -9,14 +9,11 @@ const db = cloud.database();
 
 // 引入权限验证模块（需通过 sync-shared.js 同步）
 let verifyAdminPermission;
+let sharedAuthAvailable = true;
 try {
   verifyAdminPermission = require('./shared/auth').verifyAdminPermission;
 } catch (e) {
-  // 如果 shared 目录不存在，使用简化版验证
-  verifyAdminPermission = async function() {
-    console.warn('权限模块未同步，使用简化验证');
-    return { isAdmin: true };
-  };
+  sharedAuthAvailable = false;
 }
 
 function normalizeText(v) {
@@ -32,6 +29,13 @@ exports.main = async (event, context) => {
     // 权限验证（list、get、listAll 操作跳过验证，允许只读访问）
     const needsAuth = !['list', 'get', 'listAll'].includes(action);
     if (needsAuth) {
+      if (!sharedAuthAvailable) {
+        return {
+          success: false,
+          code: 'SHARED_MODULE_MISSING',
+          message: '权限模块未同步，禁止执行写入操作'
+        };
+      }
       try {
         await verifyAdminPermission();
       } catch (authErr) {
@@ -166,6 +170,7 @@ exports.main = async (event, context) => {
     if (action === 'batchImport' && event.rooms && Array.isArray(event.rooms)) {
       let inserted = 0;
       let updated = 0;
+      const failures = [];
       
       // 先批量查询已存在的办公室
       const allRooms = await db.collection('rooms').get();
@@ -200,7 +205,20 @@ exports.main = async (event, context) => {
                   order: order || existed.order,
                   updatedAt: db.serverDate(),
                 }
-              }).then(() => { updated++; }).catch(() => {})
+              }).then(() => { updated++; }).catch((e) => {
+                failures.push({
+                  departmentId: deptId,
+                  name: normalizedName,
+                  op: 'update',
+                  message: e && e.message ? e.message : '更新失败'
+                });
+                console.error('批量导入办公室-更新失败', {
+                  departmentId: deptId,
+                  name: normalizedName,
+                  roomId: existed._id,
+                  message: e && e.message ? e.message : String(e)
+                });
+              })
             );
           } else {
             // 新增
@@ -214,7 +232,19 @@ exports.main = async (event, context) => {
                   createdAt: db.serverDate(),
                   updatedAt: db.serverDate(),
                 }
-              }).then(() => { inserted++; }).catch(() => {})
+              }).then(() => { inserted++; }).catch((e) => {
+                failures.push({
+                  departmentId: deptId,
+                  name: normalizedName,
+                  op: 'insert',
+                  message: e && e.message ? e.message : '新增失败'
+                });
+                console.error('批量导入办公室-新增失败', {
+                  departmentId: deptId,
+                  name: normalizedName,
+                  message: e && e.message ? e.message : String(e)
+                });
+              })
             );
           }
         }
@@ -222,7 +252,13 @@ exports.main = async (event, context) => {
         await Promise.all(promises);
       }
       
-      return { success: true, inserted, updated };
+      return {
+        success: true,
+        inserted,
+        updated,
+        failed: failures.length,
+        failures: failures.slice(0, 20)
+      };
     }
 
     return {

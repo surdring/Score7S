@@ -5,6 +5,7 @@ import {
   SCORING_LOW_THRESHOLDS,
   QUICK_TAGS,
   SCORING_STANDARDS,
+  ScoringItem,
 } from '../../config/scoring';
 import { debounce } from '../../utils/util';
 
@@ -22,6 +23,8 @@ interface ScoreItem {
   remark: string;
 }
 
+type ScoreMap = Record<ScoringItem, ScoreItem>;
+
 interface OfficeKey {
   dept: string;
   room: string;
@@ -31,6 +34,31 @@ interface NextOfficeSelection {
   deptIndex: number;
   roomIndex: number;
 }
+
+interface SubmittedInspectionData {
+  _id: string;
+  date: string;
+  checkerId: string;
+  checkerName: string;
+  department: string;
+  room: string;
+  totalScore: number;
+  details: Array<{ item: string; score: number; images: string[]; remark: string }>;
+}
+
+interface RoomRecord {
+  _id: string;
+  departmentId: string;
+  name: string;
+}
+
+type ScorePageThis = {
+  data: {
+    scores: ScoreMap;
+  };
+  setData: (data: Record<string, unknown>) => void;
+  debouncedUpdateRemark?: (item: ScoringItem, remark: string) => void;
+};
 
 Page({
   data: {
@@ -45,7 +73,7 @@ Page({
     deptIndex: 0,
     roomIndex: 0,
     // 评分数据
-    scores: {} as Record<string, ScoreItem>,
+    scores: {} as ScoreMap,
     scoringItems: SCORING_ITEMS,
     scoringStandards: SCORING_STANDARDS,
     scoringMaxScores: SCORING_MAX_SCORES,
@@ -55,14 +83,15 @@ Page({
     scoredCount: 0,
     // 提交成功
     submitted: false,
-    submittedData: null as any,
+    submittedData: null as SubmittedInspectionData | null,
   },
 
   onLoad() {
     this.initForm();
     
     // 创建防抖版本的备注更新方法（减少高频输入时的 setData 调用）
-    this.debouncedUpdateRemark = debounce((item: string, remark: string) => {
+    const that = this as unknown as ScorePageThis;
+    that.debouncedUpdateRemark = debounce<ScorePageThis, [ScoringItem, string]>(function (item, remark) {
       const scores = { ...this.data.scores };
       scores[item] = { ...scores[item], remark };
       this.setData({ scores });
@@ -124,8 +153,8 @@ Page({
   },
 
   resetScores() {
-    const scores: Record<string, ScoreItem> = {};
-    SCORING_ITEMS.forEach(item => {
+    const scores = {} as ScoreMap;
+    SCORING_ITEMS.forEach((item) => {
       scores[item] = { score: null, images: [], remark: '' };
     });
 
@@ -142,8 +171,8 @@ Page({
     const today = this.formatDate(new Date());
     
     // 初始化评分数据
-    const scores: Record<string, ScoreItem> = {};
-    SCORING_ITEMS.forEach(item => {
+    const scores = {} as ScoreMap;
+    SCORING_ITEMS.forEach((item) => {
       scores[item] = { score: null, images: [], remark: '' };
     });
 
@@ -171,11 +200,10 @@ Page({
         .get();
 
       const keys = (res.data || [])
-        .map((r: any) => this.makeScoredOfficeKey(r.department, r.room))
+        .map((r: Record<string, unknown>) => this.makeScoredOfficeKey(String(r.department || ''), String(r.room || '')))
         .filter((k: string) => !!k);
 
       this.setData({ scoredOfficeKeys: Array.from(new Set(keys)) });
-      console.log('当天已评分办公室数量', date, keys.length);
     } catch (err) {
       // 如果 inspections 集合不存在或权限不足，这里不阻塞打分流程
       console.error('加载当天已评分办公室失败', err);
@@ -190,23 +218,27 @@ Page({
       const deptRes = await wx.cloud.callFunction({
         name: 'manageDepartments',
         data: { action: 'list' }
-      }) as any;
+      });
 
-      if (!deptRes.result?.success || !deptRes.result?.departments) {
+      const deptResult = deptRes.result as unknown as { success?: boolean; departments?: Array<{ _id: string; name: string }> };
+
+      if (!deptResult?.success || !Array.isArray(deptResult.departments)) {
         throw new Error('获取部门数据失败');
       }
 
-      const depts = deptRes.result.departments;
+      const depts = deptResult.departments;
 
       // 调用云函数获取所有办公室
       const roomsRes = await wx.cloud.callFunction({
         name: 'manageRooms',
         data: { action: 'listAll' }
-      }) as any;
+      });
 
-      const rooms = roomsRes.result?.rooms || [];
+      const roomsResult = roomsRes.result as unknown as { rooms?: RoomRecord[] };
+
+      const rooms = Array.isArray(roomsResult.rooms) ? roomsResult.rooms : [];
       const roomMap = new Map<string, string[]>();
-      rooms.forEach((r: any) => {
+      rooms.forEach((r: RoomRecord) => {
         if (!roomMap.has(r.departmentId)) {
           roomMap.set(r.departmentId, []);
         }
@@ -214,7 +246,7 @@ Page({
       });
 
       // 组装部门数据结构
-      const departments = depts.map((d: any) => ({
+      const departments = depts.map((d: { _id: string; name: string }) => ({
         _id: d._id,
         name: d.name,
         rooms: roomMap.get(d._id) || []
@@ -284,58 +316,55 @@ Page({
   },
 
   // 日期选择
-  onDateChange(e: any) {
+  onDateChange(e: { detail: { value: string } }) {
     this.setData({ date: e.detail.value });
   },
 
   // 部门选择
-  onDeptChange(e: any) {
+  onDeptChange(e: { detail: { value: string } }) {
     const index = parseInt(e.detail.value);
     const dept = this.data.departments[index];
     this.setData({
       deptIndex: index,
+      roomIndex: 0,
       selectedDept: dept.name,
       selectedRoom: dept.rooms[0] || '',
-      roomIndex: 0,
     });
   },
 
   // 办公室选择
-  onRoomChange(e: any) {
+  onRoomChange(e: { detail: { value: string } }) {
     const index = parseInt(e.detail.value);
     const dept = this.data.departments[this.data.deptIndex];
     this.setData({
       roomIndex: index,
-      selectedRoom: dept.rooms[index],
+      selectedRoom: dept.rooms[index] || '',
     });
   },
 
   // 计算总分
-  calculateTotal(scores?: Record<string, ScoreItem>): number {
+  calculateTotal(scores?: ScoreMap): number {
     const targetScores = scores || this.data.scores;
-    return Object.values(targetScores).reduce(
-      (sum, item) => sum + (Number(item.score) || 0),
-      0
-    );
+    const values = Object.values(targetScores) as ScoreItem[];
+    return values.reduce<number>((sum, item) => sum + (Number(item.score) || 0), 0);
   },
 
   // 计算已评项目数
-  calculateScoredCount(scores?: Record<string, ScoreItem>): number {
+  calculateScoredCount(scores?: ScoreMap): number {
     const targetScores = scores || this.data.scores;
-    return Object.values(targetScores).filter(
-      (item) => item.score !== null && item.score !== undefined && item.score !== ''
-    ).length;
+    const values = Object.values(targetScores) as ScoreItem[];
+    return values.filter((item) => item.score !== null && item.score !== undefined).length;
   },
 
   // 判断是否为低分
-  isLowScore(item: string): boolean {
+  isLowScore(item: ScoringItem): boolean {
     const score = this.data.scores[item]?.score;
     if (score === null || score === undefined || score === '') return false;
     return Number(score) <= SCORING_LOW_THRESHOLDS[item];
   },
 
   // 设置分数（公共方法）
-  setScore(item: string, score: number | null) {
+  setScore(item: ScoringItem, score: number | null) {
     const maxScore = SCORING_MAX_SCORES[item];
     
     // 边界校验
@@ -352,7 +381,7 @@ Page({
   },
 
   // 增加分数
-  increaseScore(e: any) {
+  increaseScore(e: { currentTarget: { dataset: { item: ScoringItem } } }) {
     const { item } = e.currentTarget.dataset;
     const currentScore = this.data.scores[item].score;
     const maxScore = SCORING_MAX_SCORES[item];
@@ -368,7 +397,7 @@ Page({
   },
 
   // 减少分数
-  decreaseScore(e: any) {
+  decreaseScore(e: { currentTarget: { dataset: { item: ScoringItem } } }) {
     const { item } = e.currentTarget.dataset;
     const currentScore = this.data.scores[item].score;
     
@@ -382,14 +411,14 @@ Page({
   },
 
   // 快捷标签点击
-  onQuickTagTap(e: any) {
+  onQuickTagTap(e: { currentTarget: { dataset: { item: ScoringItem; value: number | string } } }) {
     const { item, value } = e.currentTarget.dataset;
     this.setScore(item, Number(value));
   },
 
   // 输入分数
-  onScoreInput(e: any) {
-    const { item } = e.currentTarget.dataset;
+  onScoreInput(e: { currentTarget: { dataset: { item: ScoringItem } }; detail: { value: string } }) {
+    const item = e.currentTarget.dataset.item as ScoringItem;
     const value = e.detail.value;
     const score = value === '' ? null : Number(value);
 
@@ -407,8 +436,8 @@ Page({
   },
 
   // 输入框失焦时校验
-  onScoreBlur(e: any) {
-    const { item } = e.currentTarget.dataset;
+  onScoreBlur(e: { currentTarget: { dataset: { item: ScoringItem } }; detail: { value: string } }) {
+    const item = e.currentTarget.dataset.item as ScoringItem;
     const value = e.detail.value;
     const maxScore = SCORING_MAX_SCORES[item];
     
@@ -433,17 +462,18 @@ Page({
     this.setScore(item, score);
   },
 
-  // 输入备注（使用防抖减少高频输入时的 setData 调用）
-  onRemarkInput(e: any) {
-    const { item } = e.currentTarget.dataset;
+  onRemarkInput(e: { currentTarget: { dataset: { item: ScoringItem } }; detail: { value: string } }) {
+    const item = e.currentTarget.dataset.item as ScoringItem;
     const remark = e.detail.value;
-    // 使用防抖版本更新
-    (this as any).debouncedUpdateRemark(item, remark);
+    const page = this as unknown as ScorePageThis;
+    if (typeof page.debouncedUpdateRemark === 'function') {
+      page.debouncedUpdateRemark(item, remark);
+    }
   },
 
   // 选择图片（带压缩）
-  async chooseImage(e: any) {
-    const { item } = e.currentTarget.dataset;
+  async chooseImage(e: { currentTarget: { dataset: { item: ScoringItem } } }) {
+    const item = e.currentTarget.dataset.item as ScoringItem;
     const currentImages = this.data.scores[item].images;
     
     if (currentImages.length >= 3) {
@@ -484,7 +514,9 @@ Page({
       });
 
       const results = await Promise.all(uploadPromises);
-      const newFileIDs = results.map((r: any) => r.fileID);
+      const newFileIDs = results
+        .map((r) => r.fileID)
+        .filter((id): id is string => typeof id === 'string' && id.length > 0);
       
       const scores = { ...this.data.scores };
       scores[item] = {
@@ -502,8 +534,9 @@ Page({
   },
 
   // 删除图片
-  deleteImage(e: any) {
-    const { item, index } = e.currentTarget.dataset;
+  deleteImage(e: { currentTarget: { dataset: { item: ScoringItem; index: number | string } } }) {
+    const item = e.currentTarget.dataset.item as ScoringItem;
+    const index = Number(e.currentTarget.dataset.index);
     const scores = { ...this.data.scores };
     const images = [...scores[item].images];
     images.splice(index, 1);
@@ -512,8 +545,9 @@ Page({
   },
 
   // 预览图片
-  previewImage(e: any) {
-    const { url, item } = e.currentTarget.dataset;
+  previewImage(e: { currentTarget: { dataset: { url?: string; item: ScoringItem } } }) {
+    const url = String(e.currentTarget.dataset.url || '');
+    const item = e.currentTarget.dataset.item as ScoringItem;
     const images = this.data.scores[item].images;
     wx.previewImage({
       current: url,
@@ -561,10 +595,12 @@ Page({
     const query = this.createSelectorQuery();
     query.select(`#item-${item}`).boundingClientRect();
     query.selectViewport().scrollOffset();
-    query.exec((res) => {
-      if (res[0] && res[1]) {
+    query.exec((res: unknown[]) => {
+      const rect = res[0] as { top?: number } | undefined;
+      const viewport = res[1] as { scrollTop?: number } | undefined;
+      if (rect?.top !== undefined && viewport?.scrollTop !== undefined) {
         wx.pageScrollTo({
-          scrollTop: res[1].scrollTop + res[0].top - 100,
+          scrollTop: viewport.scrollTop + rect.top - 100,
           duration: 300,
         });
       }
@@ -608,14 +644,16 @@ Page({
           totalScore: this.calculateTotal(),
           details,
         }
-      }) as any;
+      });
 
-      if (!res.result?.success) {
-        throw new Error(res.result?.message || '提交失败');
+      const result = res.result as { success?: boolean; message?: string; _id?: string; isOverwrite?: boolean };
+
+      if (!result?.success) {
+        throw new Error(result?.message || '提交失败');
       }
 
       // 如果覆盖已有评分，显示提示
-      if (res.result?.isOverwrite) {
+      if (result.isOverwrite) {
         wx.showToast({ 
           title: '评分已更新', 
           icon: 'success',
@@ -633,7 +671,7 @@ Page({
       this.setData({
         submitted: true,
         submittedData: {
-          _id: res.result._id,
+          _id: String(result._id || ''),
           date: this.data.date,
           checkerId: app.globalData.userInfo?.nickName || '匿名检查员',
           checkerName: app.globalData.userInfo?.nickName || '匿名检查员',
@@ -641,7 +679,6 @@ Page({
           room: this.data.selectedRoom,
           totalScore: this.calculateTotal(),
           details,
-          createdAt: new Date(),
         },
         submitting: false,
       });

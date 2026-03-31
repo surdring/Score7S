@@ -15,28 +15,9 @@ function sha256(text) {
   return crypto.createHash('sha256').update(text).digest('hex');
 }
 
-/**
- * 初始化默认密码到 config 集合
- * 仅在配置不存在时调用一次
- */
-async function initDefaultPassword() {
-  const defaultPassword = '7S123456';
-  const passwordHash = sha256(defaultPassword);
-  
-  try {
-    await db.collection('config').doc('admin').set({
-      data: {
-        adminPasswordHash: passwordHash,
-        createdAt: db.serverDate(),
-        updatedAt: db.serverDate()
-      }
-    });
-    console.log('默认密码已初始化');
-    return passwordHash;
-  } catch (err) {
-    console.error('初始化密码失败', err);
-    return null;
-  }
+function pbkdf2Hex(password, saltHex, iterations, keylen) {
+  const salt = Buffer.from(saltHex, 'hex');
+  return crypto.pbkdf2Sync(password, salt, iterations, keylen, 'sha256').toString('hex');
 }
 
 // 云函数入口函数
@@ -53,49 +34,60 @@ exports.main = async (event, context) => {
       .doc('admin')
       .get()
       .catch(() => ({ data: null }));
-    
-    // 计算输入密码的哈希
-    const inputHash = sha256(password);
-    
+
     if (!configRes.data) {
-      // 配置不存在，初始化默认密码
-      const defaultHash = await initDefaultPassword();
-      
-      if (defaultHash) {
-        // 使用刚初始化的默认密码对比
-        return {
-          success: inputHash === defaultHash,
-          message: inputHash === defaultHash ? '' : '密码错误'
-        };
-      } else {
+      return {
+        success: false,
+        code: 'ADMIN_NOT_INITIALIZED',
+        message: '系统未初始化，请联系管理员'
+      };
+    }
+
+    const adminConfig = configRes.data;
+    const passwordScheme = adminConfig.adminPasswordScheme;
+
+    // 新方案：PBKDF2（推荐）
+    if (passwordScheme === 'PBKDF2') {
+      const saltHex = adminConfig.adminPasswordSalt;
+      const iterations = adminConfig.adminPasswordIterations;
+      const keylen = adminConfig.adminPasswordKeylen;
+      const stored = adminConfig.adminPasswordHash;
+
+      if (!saltHex || !iterations || !keylen || !stored) {
         return {
           success: false,
+          code: 'ADMIN_NOT_INITIALIZED',
           message: '系统未初始化，请联系管理员'
         };
       }
-    }
-    
-    // 获取存储的密码哈希
-    const storedHash = configRes.data.adminPasswordHash;
-    const storedPassword = configRes.data.adminPassword; // 兼容旧数据
-    
-    if (!storedHash && !storedPassword) {
-      // 字段不存在，重新初始化
-      const defaultHash = await initDefaultPassword();
+
+      const computed = pbkdf2Hex(password, saltHex, iterations, keylen);
+      const isValid = computed === stored;
       return {
-        success: inputHash === defaultHash,
-        message: inputHash === defaultHash ? '' : '密码错误'
+        success: isValid,
+        message: isValid ? '' : '密码错误'
       };
     }
-    
-    // 优先使用哈希对比，其次明文对比（向后兼容）
+
+    // 兼容旧方案：SHA256 / 明文（仅校验，不再自动初始化默认密码）
+    const storedHash = adminConfig.adminPasswordHash;
+    const storedPassword = adminConfig.adminPassword;
+    if (!storedHash && !storedPassword) {
+      return {
+        success: false,
+        code: 'ADMIN_NOT_INITIALIZED',
+        message: '系统未初始化，请联系管理员'
+      };
+    }
+
+    const inputHash = sha256(password);
     let isValid = false;
     if (storedHash) {
       isValid = inputHash === storedHash;
     } else if (storedPassword) {
       isValid = password === storedPassword;
     }
-    
+
     return {
       success: isValid,
       message: isValid ? '' : '密码错误'

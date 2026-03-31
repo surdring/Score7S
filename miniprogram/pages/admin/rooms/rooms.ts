@@ -1,10 +1,24 @@
 // 办公室管理页面
+
+interface RoomsPageRoom {
+  _id: string;
+  departmentId: string;
+  name: string;
+  manager?: string;
+  order?: number;
+}
+
+interface RoomsPageDepartment {
+  _id: string;
+  name: string;
+}
+
 Page({
   data: {
     loading: false,
     departmentId: '',
     departmentName: '',
-    rooms: [] as any[],
+    rooms: [] as RoomsPageRoom[],
     showModal: false,
     isEdit: false,
     editId: '',
@@ -13,7 +27,7 @@ Page({
     formOrder: '',
   },
 
-  onLoad(options: any) {
+  onLoad(options: { departmentId?: string }) {
     if (options.departmentId) {
       this.setData({ departmentId: options.departmentId });
       this.loadDepartmentInfo();
@@ -30,10 +44,12 @@ Page({
           action: 'get',
           departmentId: this.data.departmentId
         }
-      }) as any;
+      });
 
-      if (res.result?.success && res.result.department) {
-        this.setData({ departmentName: res.result.department.name });
+      const result = res.result as unknown as { success?: boolean; department?: RoomsPageDepartment };
+
+      if (result?.success && result.department) {
+        this.setData({ departmentName: result.department.name });
       }
     } catch (err) {
       console.error('加载部门信息失败', err);
@@ -50,10 +66,12 @@ Page({
           action: 'list',
           departmentId: this.data.departmentId
         }
-      }) as any;
+      });
 
-      if (res.result?.success) {
-        this.setData({ rooms: res.result.rooms || [] });
+      const result = res.result as unknown as { success?: boolean; rooms?: RoomsPageRoom[] };
+
+      if (result?.success) {
+        this.setData({ rooms: Array.isArray(result.rooms) ? result.rooms : [] });
       }
     } catch (err) {
       console.error('加载办公室失败', err);
@@ -76,15 +94,15 @@ Page({
   },
 
   // 显示编辑弹窗
-  showEditDialog(e: any) {
+  showEditDialog(e: { currentTarget: { dataset: { id?: string; name?: string; manager?: string; order?: string | number } } }) {
     const { id, name, manager, order } = e.currentTarget.dataset;
     this.setData({
       showModal: true,
       isEdit: true,
-      editId: id,
-      formName: name,
+      editId: id || '',
+      formName: name || '',
       formManager: manager || '',
-      formOrder: String(order)
+      formOrder: String(order ?? '')
     });
   },
 
@@ -94,17 +112,17 @@ Page({
   },
 
   // 输入办公室名称
-  onNameInput(e: any) {
+  onNameInput(e: { detail: { value: string } }) {
     this.setData({ formName: e.detail.value });
   },
 
   // 输入负责人
-  onManagerInput(e: any) {
+  onManagerInput(e: { detail: { value: string } }) {
     this.setData({ formManager: e.detail.value });
   },
 
   // 输入排序
-  onOrderInput(e: any) {
+  onOrderInput(e: { detail: { value: string } }) {
     this.setData({ formOrder: e.detail.value });
   },
 
@@ -132,16 +150,18 @@ Page({
             order: parseInt(formOrder) || 1
           }
         }
-      }) as any;
+      });
+
+      const result = res.result as unknown as { success?: boolean; message?: string };
 
       wx.hideLoading();
 
-      if (res.result?.success) {
+      if (result?.success) {
         wx.showToast({ title: isEdit ? '更新成功' : '添加成功', icon: 'success' });
         this.setData({ showModal: false });
         this.loadRooms();
       } else {
-        wx.showToast({ title: res.result?.message || '操作失败', icon: 'error' });
+        wx.showToast({ title: result?.message || '操作失败', icon: 'error' });
       }
     } catch (err) {
       wx.hideLoading();
@@ -150,7 +170,7 @@ Page({
   },
 
   // 删除办公室
-  deleteRoom(e: any) {
+  deleteRoom(e: { currentTarget: { dataset: { id?: string; name?: string } } }) {
     const { id, name } = e.currentTarget.dataset;
 
     wx.showModal({
@@ -166,15 +186,17 @@ Page({
                 action: 'delete',
                 roomId: id
               }
-            }) as any;
+            });
+
+            const callResult = result.result as unknown as { success?: boolean; message?: string };
 
             wx.hideLoading();
 
-            if (result.result?.success) {
+            if (callResult?.success) {
               wx.showToast({ title: '删除成功', icon: 'success' });
               this.loadRooms();
             } else {
-              wx.showToast({ title: result.result?.message || '删除失败', icon: 'error' });
+              wx.showToast({ title: callResult?.message || '删除失败', icon: 'error' });
             }
           } catch (err) {
             wx.hideLoading();

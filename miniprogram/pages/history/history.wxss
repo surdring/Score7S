@@ -1,106 +1,211 @@
-/* pages/history/history.wxss */
+/* pages/history/history.wxss - 结构化档案风格 */
 
 .container {
-  padding: 32rpx;
-  padding-bottom: calc(32rpx + env(safe-area-inset-bottom));
+  background-color: #F5F7FA;
 }
 
-/* 头部（已删除） */
-.header,
-.header-left,
-.header-right,
-.export-hint,
-.header-title,
-.header-subtitle,
-.export-btn {
-  display: none;
+/* ========== 1. 顶部Header：卡片式蓝紫渐变 ========== */
+.header {
+  margin-bottom: var(--card-gap);
+  border-radius: 24rpx;
+  background: linear-gradient(135deg, #3B82F6 0%, #6366F1 100%);
+  padding: var(--card-padding);
+  box-shadow: 0 8rpx 32rpx rgba(59, 130, 246, 0.25);
 }
 
-/* 筛选区域 */
-.filter-section {
+.header-content {
   margin-bottom: 24rpx;
 }
 
+/* 标题区域 */
+.header-title-area {
+  display: flex;
+  flex-direction: column;
+  gap: 8rpx;
+}
+
+.header-main-title {
+  font-size: 36rpx;
+  font-weight: 700;
+  color: #FFFFFF;
+  line-height: 1.2;
+}
+
+.header-subtitle {
+  font-size: 24rpx;
+  color: rgba(255, 255, 255, 0.6);
+  font-weight: 400;
+}
+
+/* 搜索框 - 胶囊半透明 + 内阴影 */
 .search-box {
   display: flex;
   align-items: center;
-  background-color: #FFFFFF;
-  border: 2rpx solid #E5E7EB;
-  border-radius: 16rpx;
-  padding: 20rpx 24rpx;
+  gap: 12rpx;
+  background-color: rgba(255, 255, 255, 0.15);
+  border-radius: 40rpx;
+  padding: 16rpx 24rpx;
   margin-bottom: 16rpx;
+  border: 1rpx solid rgba(255, 255, 255, 0.25);
+  box-shadow: inset 0 2rpx 4rpx rgba(0, 0, 0, 0.05);
 }
 
+/* 线性放大镜图标 - 60%白色 */
 .search-icon {
-  font-size: 32rpx;
-  margin-right: 16rpx;
+  width: 20rpx;
+  height: 20rpx;
+  border: 2rpx solid rgba(255, 255, 255, 0.6);
+  border-radius: 50%;
+  position: relative;
+  flex-shrink: 0;
+}
+
+.search-icon::after {
+  content: '';
+  position: absolute;
+  width: 2rpx;
+  height: 8rpx;
+  background: rgba(255, 255, 255, 0.6);
+  bottom: -6rpx;
+  right: -2rpx;
+  transform: rotate(-45deg);
 }
 
 .search-input {
   flex: 1;
   font-size: 28rpx;
+  color: #FFFFFF;
+  letter-spacing: 1rpx;
+  line-height: 1;
 }
 
-/* 日期选择器 */
-.date-picker {
-  display: flex;
-  align-items: center;
-  background-color: #FFFFFF;
-  border: 2rpx solid #E5E7EB;
-  border-radius: 16rpx;
-  padding: 20rpx 24rpx;
-  flex: 1;
-}
-
-.picker-icon {
-  font-size: 32rpx;
-  margin-right: 16rpx;
-}
-
-.picker-value {
+.search-input::placeholder {
+  color: rgba(255, 255, 255, 0.6);
   font-size: 28rpx;
-  color: #111827;
+  letter-spacing: 1rpx;
 }
 
-.picker-value.placeholder {
-  color: #9CA3AF;
+/* 搜索框focus状态 - 边框高亮 */
+.search-input:focus {
+  outline: none;
 }
 
-/* 筛选行布局 */
+/* 筛选行：日期 + 导出 */
 .filter-row {
   display: flex;
   align-items: center;
   gap: 16rpx;
-  justify-content: space-between;
 }
 
-/* 清除筛选按钮（已删除） */
-.clear-filter-btn {
-  display: none;
+.date-picker,
+.export-btn-light {
+  background-color: rgba(255, 255, 255, 0.15);
+  border-radius: 40rpx;
+  border: 1rpx solid rgba(255, 255, 255, 0.2);
 }
 
-/* 轻量导出按钮 */
+/* 日期选择器 - 胶囊半透明 */
+.date-picker {
+  display: flex;
+  align-items: center;
+  gap: 12rpx;
+  flex: 1;
+  padding: 14rpx 18rpx;
+}
+
+/* 线性日历图标 */
+.picker-icon {
+  width: 18rpx;
+  height: 18rpx;
+  border: 2rpx solid rgba(255, 255, 255, 0.9);
+  border-radius: 3rpx;
+  position: relative;
+  flex-shrink: 0;
+}
+
+.picker-icon::after {
+  content: '';
+  position: absolute;
+  width: 5rpx;
+  height: 2rpx;
+  background: rgba(255, 255, 255, 0.9);
+  top: 3rpx;
+  left: 50%;
+  transform: translateX(-50%);
+  box-shadow: 0 2rpx 0 rgba(255, 255, 255, 0.9);
+}
+
+.picker-value {
+  flex: 1;
+  font-size: 26rpx;
+  color: #FFFFFF;
+  font-weight: 500;
+}
+
+.picker-value.placeholder {
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.picker-arrow {
+  font-size: 16rpx;
+  color: rgba(255, 255, 255, 0.7);
+  flex-shrink: 0;
+}
+
+/* 导出按钮 - 细线蓝色图标 */
 .export-btn-light {
   display: flex;
   align-items: center;
   gap: 8rpx;
-  background-color: transparent;
-  padding: 16rpx 20rpx;
+  padding: 14rpx 18rpx;
   font-size: 26rpx;
-  color: #3B82F6;
+  color: #FFFFFF;
+  font-weight: 500;
   white-space: nowrap;
 }
 
 .export-btn-light.disabled {
-  color: #9CA3AF;
-  opacity: 0.6;
+  opacity: 0.5;
 }
 
+/* 线性导出图标（下载箭头） */
 .export-icon {
-  font-size: 28rpx;
+  width: 18rpx;
+  height: 18rpx;
+  position: relative;
+  flex-shrink: 0;
 }
 
-/* 列表 */
+.export-icon::before {
+  content: '';
+  position: absolute;
+  width: 2rpx;
+  height: 10rpx;
+  background: #FFFFFF;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.export-icon::after {
+  content: '';
+  position: absolute;
+  width: 0;
+  height: 0;
+  border-left: 5rpx solid transparent;
+  border-right: 5rpx solid transparent;
+  border-top: 6rpx solid #FFFFFF;
+  bottom: 2rpx;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+/* 隐藏旧筛选区域 */
+.filter-section {
+  display: none;
+}
+
+/* ========== 2. 记录卡片：去边框 + 左侧色条 + DIN字体 ========== */
 .list {
   display: flex;
   flex-direction: column;
@@ -110,42 +215,51 @@
 .list-item {
   display: flex;
   align-items: center;
-  gap: 20rpx;
+  gap: 0;
   background-color: #FFFFFF;
   border-radius: 16rpx;
-  padding: 24rpx;
-  box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.05);
+  padding: 24rpx 24rpx 24rpx 20rpx;
+  box-shadow: 0 10rpx 40rpx rgba(0, 0, 0, 0.03);
   position: relative;
+  overflow: hidden;
 }
 
-.list-item:active {
-  background-color: #F9FAFB;
+/* 左侧4px色条 - 珊瑚浅红(满分)/品牌蓝(良好)/炭黑(待改进) */
+.color-bar {
+  width: 4rpx;
+  height: 100%;
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
 }
 
-.item-icon {
-  width: 64rpx;
-  height: 64rpx;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background-color: #DBEAFE;
-  border-radius: 12rpx;
-  font-size: 32rpx;
+.color-bar.perfect {
+  background: linear-gradient(180deg, #F87171 0%, #F87171 100%);
+}
+
+.color-bar.good {
+  background: linear-gradient(180deg, #3B82F6 0%, #6366F1 100%);
+}
+
+.color-bar.normal {
+  background: linear-gradient(180deg, #2D3436 0%, #2D3436 100%);
 }
 
 .item-content {
   flex: 1;
-}
-
-.item-dept {
-  display: block;
-  font-size: 32rpx;
-  font-weight: 600;
-  color: #111827;
-  margin-bottom: 6rpx;
+  padding-left: 16rpx;
 }
 
 .item-room {
+  display: block;
+  font-size: 30rpx;
+  font-weight: 600;
+  color: #111827;
+  margin-bottom: 4rpx;
+}
+
+.item-dept {
   display: block;
   font-size: 24rpx;
   color: #6B7280;
@@ -160,17 +274,43 @@
   color: #9CA3AF;
 }
 
+.meta-dot {
+  color: #D1D5DB;
+}
+
+/* 右侧分数区域 */
 .item-right {
   display: flex;
   align-items: center;
-  gap: 12rpx;
+  gap: 16rpx;
   pointer-events: none;
 }
 
+.score-section {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 6rpx;
+}
+
+/* DIN字体大分数 */
 .item-score {
-  font-size: 36rpx;
-  font-weight: 600;
+  font-size: 44rpx;
+  font-weight: 700;
+  font-family: 'DIN Alternate', 'SF Pro Display', -apple-system, BlinkMacSystemFont, sans-serif;
+  line-height: 1;
+}
+
+.item-score.perfect {
+  color: #F87171;
+}
+
+.item-score.good {
   color: #3B82F6;
+}
+
+.item-score.normal {
+  color: #2D3436;
 }
 
 .item-arrow {
@@ -340,4 +480,102 @@
   border-radius: 12rpx;
   border: 2rpx solid #E5E7EB;
   flex-shrink: 0;
+}
+
+/* ========== 3. 加载状态 ========== */
+.loading {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 60vh;
+}
+
+.loading-spinner {
+  width: 64rpx;
+  height: 64rpx;
+  border: 4rpx solid #E5E7EB;
+  border-top-color: #3B82F6;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* ========== 4. 空状态：线性插画风格 ========== */
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 120rpx 32rpx;
+}
+
+/* 线性插画 - 文件夹+放大镜 */
+.empty-illustration {
+  position: relative;
+  width: 120rpx;
+  height: 100rpx;
+  margin-bottom: 32rpx;
+}
+
+/* 文件夹图标 */
+.folder-icon {
+  width: 80rpx;
+  height: 60rpx;
+  border: 3rpx solid #D1D5DB;
+  border-radius: 8rpx;
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.folder-icon::before {
+  content: '';
+  position: absolute;
+  width: 24rpx;
+  height: 8rpx;
+  border: 3rpx solid #D1D5DB;
+  border-bottom: none;
+  border-radius: 4rpx 4rpx 0 0;
+  top: -11rpx;
+  left: 8rpx;
+}
+
+/* 搜索线 */
+.search-line {
+  width: 40rpx;
+  height: 40rpx;
+  border: 3rpx solid #9CA3AF;
+  border-radius: 50%;
+  position: absolute;
+  top: 0;
+  right: 0;
+}
+
+.search-line::after {
+  content: '';
+  position: absolute;
+  width: 3rpx;
+  height: 16rpx;
+  background: #9CA3AF;
+  bottom: -12rpx;
+  right: 4rpx;
+  transform: rotate(-45deg);
+}
+
+.empty-text {
+  font-size: 32rpx;
+  color: #374151;
+  font-weight: 500;
+  margin-bottom: 12rpx;
+}
+
+.empty-hint {
+  font-size: 26rpx;
+  color: #9CA3AF;
 }

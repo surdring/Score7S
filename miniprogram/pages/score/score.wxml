@@ -1,12 +1,17 @@
 <!--pages/score/score.wxml-->
 <view wx:if="{{!submitted}}" class="page">
-  <!-- 头部信息 - 紧凑布局 -->
+  <!-- 头部信息 - 卡片式蓝紫渐变 -->
   <view class="header">
+    <!-- 标题区域 -->
+    <view class="header-title-area">
+      <text class="header-main-title">7S评分表单</text>
+      <text class="header-subtitle">按标准逐项评分，低分需备注或拍照</text>
+    </view>
     <!-- 胶囊式选择器 -->
     <view class="capsule-row">
       <view class="capsule-half capsule-date">
         <view class="capsule-btn-static">
-          <text class="capsule-icon">📅</text>
+          <view class="capsule-icon"></view>
           <text class="capsule-text">{{date}}</text>
         </view>
       </view>
@@ -19,7 +24,7 @@
           bindchange="onDeptChange"
         >
           <view class="capsule-btn">
-            <text class="capsule-icon">🏢</text>
+            <view class="capsule-icon"></view>
             <text class="capsule-text">{{selectedDept || '选择部门'}}</text>
             <text class="capsule-arrow">▾</text>
           </view>
@@ -36,7 +41,7 @@
           bindchange="onRoomChange"
         >
           <view class="capsule-btn">
-            <text class="capsule-icon">📍</text>
+            <view class="capsule-icon"></view>
             <text class="capsule-text">{{selectedRoom || '选择办公室'}}</text>
             <text class="capsule-arrow">▾</text>
           </view>
@@ -55,11 +60,12 @@
     <view 
       wx:for="{{scoringItems}}" 
       wx:key="*this" 
-      class="score-card"
+      class="score-card score-item"
+      data-item="{{item}}"
       id="item-{{item}}"
     >
       <view class="score-header">
-        <view class="score-number">{{index + 1}}</view>
+        <view class="score-icon"></view>
         <view class="score-title-wrap">
           <text class="score-title">{{item}}</text>
           <text class="score-standard">{{scoringStandards[item]}}</text>
@@ -110,6 +116,7 @@
           bindtap="onQuickTagTap"
           data-item="{{item}}"
           data-value="{{tag.value}}"
+          data-percent="{{tag.percent}}"
         >
           {{tag.label}}
         </view>
@@ -156,7 +163,7 @@
             bindtap="chooseImage"
             data-item="{{item}}"
           >
-            <text class="upload-icon">📷</text>
+            <view class="upload-icon"></view>
             <text class="upload-text">拍照/相册({{scores[item].images.length}}/3)</text>
           </view>
         </view>
@@ -174,20 +181,31 @@
   </view>
 
   <!-- 底部提交栏 -->
-  <view class="submit-bar">
-    <view class="total-score">
-      <text class="total-label">当前总计</text>
-      <text class="total-value">{{totalScore}}</text>
-      <text class="total-unit">分</text>
+  <view class="submit-bar {{scoredCount < 7 ? 'incomplete' : 'ready'}}">
+    <view class="bar-left-zone">
+      <view class="total-score">
+        <text class="total-label">当前总评分</text>
+        <view class="score-container">
+          <text class="total-value">{{totalScore}}</text>
+          <text class="total-unit">分</text>
+        </view>
+      </view>
+      <!-- 垂直分割线 -->
+      <view class="v-divider"></view>
     </view>
+
     <button 
       class="submit-btn {{submitting || scoredCount < 7 ? 'disabled' : ''}}"
       bindtap="submit"
       disabled="{{submitting || scoredCount < 7}}"
     >
-      <text wx:if="{{submitting}}">提交中...</text>
-      <text wx:elif="{{scoredCount < 7}}">还有{{7 - scoredCount}}项未评</text>
-      <text wx:else>提交评分</text>
+      <view class="btn-content">
+        <text wx:if="{{submitting}}">提交中...</text>
+        <block wx:elif="{{scoredCount < 7}}">
+          <text class="btn-sub-text">剩余{{7 - scoredCount}}项</text>
+        </block>
+        <text wx:else>提交评分</text>
+      </view>
     </button>
   </view>
 </view>

@@ -18,10 +18,25 @@ const DEPARTMENTS_DATA = [
   { name: '工程审计', rooms: ['科长办公室-工程部办公楼3楼', '科员办公室-工程部办公楼3楼'] },
 ];
 
+interface DepartmentsPageDepartment {
+  _id: string;
+  name: string;
+  order?: number;
+  roomCount?: number;
+}
+
+interface DepartmentsPageRoom {
+  _id?: string;
+  departmentId: string;
+  name: string;
+  order?: number;
+  manager?: string;
+}
+
 Page({
   data: {
     loading: false,
-    departments: [] as any[],
+    departments: [] as DepartmentsPageDepartment[],
     showModal: false,
     isEdit: false,
     editId: '',
@@ -44,25 +59,29 @@ Page({
       const res = await wx.cloud.callFunction({
         name: 'manageDepartments',
         data: { action: 'list' }
-      }) as any;
+      });
 
-      if (res.result?.success) {
-        const departments = res.result.departments || [];
+      const result = res.result as unknown as { success?: boolean; departments?: DepartmentsPageDepartment[] };
+
+      if (result?.success) {
+        const departments = Array.isArray(result.departments) ? result.departments : [];
         
         // 加载每个部门的办公室数量
         const roomsRes = await wx.cloud.callFunction({
           name: 'manageRooms',
           data: { action: 'listAll' }
-        }) as any;
+        });
+
+        const roomsResult = roomsRes.result as unknown as { rooms?: DepartmentsPageRoom[] };
         
-        const rooms = roomsRes.result?.rooms || [];
+        const rooms = Array.isArray(roomsResult.rooms) ? roomsResult.rooms : [];
         const roomCountMap = new Map<string, number>();
-        rooms.forEach((r: any) => {
+        rooms.forEach((r: DepartmentsPageRoom) => {
           const count = roomCountMap.get(r.departmentId) || 0;
           roomCountMap.set(r.departmentId, count + 1);
         });
         
-        const departmentsWithCount = departments.map((d: any) => ({
+        const departmentsWithCount = departments.map((d: DepartmentsPageDepartment) => ({
           ...d,
           roomCount: roomCountMap.get(d._id) || 0
         }));
@@ -96,22 +115,26 @@ Page({
                   order: i + 1
                 }))
               }
-            }) as any;
+            });
 
-            if (!deptRes.result?.success) {
-              throw new Error(deptRes.result?.message || '导入部门失败');
+            const deptResult = deptRes.result as unknown as { success?: boolean; message?: string };
+
+            if (!deptResult?.success) {
+              throw new Error(deptResult?.message || '导入部门失败');
             }
 
             // 获取部门列表以获取ID
             const listRes = await wx.cloud.callFunction({
               name: 'manageDepartments',
               data: { action: 'list' }
-            }) as any;
+            });
 
-            const deptMap = new Map((listRes.result?.departments || []).map((d: any) => [d.name, d._id]));
+            const listResult = listRes.result as unknown as { departments?: DepartmentsPageDepartment[] };
+            const deptList = Array.isArray(listResult.departments) ? listResult.departments : [];
+            const deptMap = new Map(deptList.map((d: DepartmentsPageDepartment) => [d.name, d._id]));
 
             // 导入办公室
-            const roomsData: any[] = [];
+            const roomsData: DepartmentsPageRoom[] = [];
             DEPARTMENTS_DATA.forEach((dept, deptIndex) => {
               const deptId = deptMap.get(dept.name);
               if (deptId) {
@@ -139,9 +162,10 @@ Page({
             wx.hideLoading();
             wx.showToast({ title: '导入成功', icon: 'success' });
             this.loadDepartments();
-          } catch (err: any) {
+          } catch (err: unknown) {
             wx.hideLoading();
-            wx.showToast({ title: err.message || '导入失败', icon: 'error' });
+            const message = err && (err as { message?: string }).message ? (err as { message?: string }).message! : '导入失败';
+            wx.showToast({ title: message, icon: 'error' });
           }
         }
       }
@@ -160,14 +184,14 @@ Page({
   },
 
   // 显示编辑弹窗
-  showEditDialog(e: any) {
+  showEditDialog(e: { currentTarget: { dataset: { id?: string; name?: string; order?: string | number } } }) {
     const { id, name, order } = e.currentTarget.dataset;
     this.setData({
       showModal: true,
       isEdit: true,
-      editId: id,
-      formName: name,
-      formOrder: String(order)
+      editId: id || '',
+      formName: name || '',
+      formOrder: String(order ?? '')
     });
   },
 
@@ -177,12 +201,12 @@ Page({
   },
 
   // 输入部门名称
-  onNameInput(e: any) {
+  onNameInput(e: { detail: { value: string } }) {
     this.setData({ formName: e.detail.value });
   },
 
   // 输入排序
-  onOrderInput(e: any) {
+  onOrderInput(e: { detail: { value: string } }) {
     this.setData({ formOrder: e.detail.value });
   },
 
@@ -208,16 +232,18 @@ Page({
             order: parseInt(formOrder) || 1
           }
         }
-      }) as any;
+      });
+
+      const result = res.result as unknown as { success?: boolean; message?: string };
 
       wx.hideLoading();
 
-      if (res.result?.success) {
+      if (result?.success) {
         wx.showToast({ title: isEdit ? '更新成功' : '添加成功', icon: 'success' });
         this.setData({ showModal: false });
         this.loadDepartments();
       } else {
-        wx.showToast({ title: res.result?.message || '操作失败', icon: 'error' });
+        wx.showToast({ title: result?.message || '操作失败', icon: 'error' });
       }
     } catch (err) {
       wx.hideLoading();
@@ -226,7 +252,7 @@ Page({
   },
 
   // 删除部门
-  deleteDept(e: any) {
+  deleteDept(e: { currentTarget: { dataset: { id?: string; name?: string } } }) {
     const { id, name } = e.currentTarget.dataset;
 
     wx.showModal({
@@ -242,15 +268,17 @@ Page({
                 action: 'delete',
                 departmentId: id
               }
-            }) as any;
+            });
+
+            const callResult = result.result as unknown as { success?: boolean; message?: string };
 
             wx.hideLoading();
 
-            if (result.result?.success) {
+            if (callResult?.success) {
               wx.showToast({ title: '删除成功', icon: 'success' });
               this.loadDepartments();
             } else {
-              wx.showToast({ title: result.result?.message || '删除失败', icon: 'error' });
+              wx.showToast({ title: callResult?.message || '删除失败', icon: 'error' });
             }
           } catch (err) {
             wx.hideLoading();
@@ -262,10 +290,10 @@ Page({
   },
 
   // 查看部门下的办公室
-  viewRooms(e: any) {
-    const { id } = e.currentTarget.dataset;
+  viewRooms(e: { currentTarget: { dataset: { id?: string } } }) {
+    const { id: deptId } = e.currentTarget.dataset;
     wx.navigateTo({
-      url: `/pages/admin/rooms/rooms?departmentId=${id}`
+      url: `/pages/admin/rooms/rooms?departmentId=${deptId}`
     });
   },
 
@@ -282,12 +310,20 @@ Page({
             const result = await wx.cloud.callFunction({
               name: 'clearAllData',
               data: { type: 'all' }
-            }) as any;
+            });
+
+            const callResult = result.result as unknown as {
+              success?: boolean;
+              message?: string;
+              data?: { departments?: number; rooms?: number; inspections?: number };
+            };
 
             wx.hideLoading();
 
-            if (result.result?.success) {
-              const { departments, rooms, inspections } = result.result.data;
+            if (callResult?.success && callResult.data) {
+              const departments = callResult.data.departments || 0;
+              const rooms = callResult.data.rooms || 0;
+              const inspections = callResult.data.inspections || 0;
               wx.showModal({
                 title: '清理完成',
                 content: `已删除：\n• ${departments} 个部门\n• ${rooms} 个办公室\n• ${inspections} 条评分记录\n\n请点击"从本地配置初始化"导入新数据。`,
@@ -297,11 +333,12 @@ Page({
                 }
               });
             } else {
-              throw new Error(result.result?.message || '清理失败');
+              throw new Error(callResult?.message || '清理失败');
             }
-          } catch (err: any) {
+          } catch (err: unknown) {
             wx.hideLoading();
-            wx.showToast({ title: err.message || '清理失败', icon: 'error' });
+            const message = err && (err as { message?: string }).message ? (err as { message?: string }).message! : '清理失败';
+            wx.showToast({ title: message, icon: 'error' });
           }
         }
       }
