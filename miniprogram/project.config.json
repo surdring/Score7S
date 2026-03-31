@@ -17,7 +17,7 @@
     "uglifyFileName": false,
     "checkInvalidKey": true,
     "checkSiteMap": true,
-    "uploadWithSourceMap": true,
+    "uploadWithSourceMap": false,
     "compileHotReLoad": false,
     "lazyloadPlaceholderEnable": false,
     "useMultiFrameRuntime": true,
@@ -64,7 +64,40 @@
   "libVersion": "3.15.0",
   "srcMiniprogramRoot": "",
   "packOptions": {
-    "ignore": [],
+    "ignore": [
+      {
+        "type": "folder",
+        "value": "node_modules"
+      },
+      {
+        "type": "folder",
+        "value": "miniprogram_npm"
+      },
+      {
+        "type": "folder",
+        "value": "docs"
+      },
+      {
+        "type": "folder",
+        "value": "scripts"
+      },
+      {
+        "type": "regexp",
+        "value": "\\.map$"
+      },
+      {
+        "type": "file",
+        "value": "package.json"
+      },
+      {
+        "type": "file",
+        "value": "package-lock.json"
+      },
+      {
+        "type": "file",
+        "value": "tsconfig.json"
+      }
+    ],
     "include": []
   },
   "simulatorPluginLibVersion": {}

@@ -224,8 +224,7 @@
 
     <view class="success-actions">
       <button class="action-btn primary" bindtap="viewDetail">查看详情</button>
-      <button class="action-btn secondary" bindtap="goHome">返回首页</button>
-      <button class="action-btn text" bindtap="continueScore">继续打分</button>
+      <button class="action-btn secondary" bindtap="continueScore">继续打分</button>
     </view>
   </view>
 </view>
