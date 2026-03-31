@@ -43,6 +43,8 @@ Page({
     loadingMore: false,
   },
 
+  _searchDebounceTimer: null as ReturnType<typeof setTimeout> | null,
+
   onLoad(options: { searchKeyword?: string; selectedDate?: string }) {
     // 如果传入搜索关键词或日期，则设置
     const searchKeyword = options.searchKeyword || '';
@@ -155,8 +157,17 @@ Page({
 
   // 搜索输入
   onSearchInput(e: { detail: { value: string } }) {
-    this.setData({ searchKeyword: e.detail.value });
-    this.applyFilter();
+    const value = e.detail.value;
+    this.setData({ searchKeyword: value });
+
+    if (this._searchDebounceTimer) {
+      clearTimeout(this._searchDebounceTimer);
+      this._searchDebounceTimer = null;
+    }
+    this._searchDebounceTimer = setTimeout(() => {
+      this.applyFilter();
+      this._searchDebounceTimer = null;
+    }, 250);
   },
 
   // 日期选择

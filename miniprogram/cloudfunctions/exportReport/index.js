@@ -56,13 +56,33 @@ async function generateExcelBuffer(inspections, departments, month, selectedDate
   let allDepartments = [];
   let allRooms = [];
   try {
-    // 查询所有部门
-    const deptsRes = await db.collection('departments').orderBy('order', 'asc').get();
-    allDepartments = deptsRes.data || [];
-    
-    // 查询所有办公室
-    const roomsRes = await db.collection('rooms').orderBy('order', 'asc').get();
-    allRooms = roomsRes.data || [];
+    const deptBatchSize = 100;
+    for (let offset = 0; ; offset += deptBatchSize) {
+      const deptsRes = await db.collection('departments')
+        .orderBy('order', 'asc')
+        .skip(offset)
+        .limit(deptBatchSize)
+        .field({ name: true, order: true })
+        .get();
+      const batch = deptsRes.data || [];
+      if (batch.length === 0) break;
+      allDepartments.push(...batch);
+      if (batch.length < deptBatchSize) break;
+    }
+
+    const roomBatchSize = 200;
+    for (let offset = 0; ; offset += roomBatchSize) {
+      const roomsRes = await db.collection('rooms')
+        .orderBy('order', 'asc')
+        .skip(offset)
+        .limit(roomBatchSize)
+        .field({ departmentId: true, name: true, order: true })
+        .get();
+      const batch = roomsRes.data || [];
+      if (batch.length === 0) break;
+      allRooms.push(...batch);
+      if (batch.length < roomBatchSize) break;
+    }
   } catch (err) {
     console.error('查询部门/办公室失败', err);
     // 如果查询失败，退回到从检查记录中提取
@@ -248,20 +268,20 @@ async function generateExcelBuffer(inspections, departments, month, selectedDate
     // 使用从数据库查询的部门/办公室
     deptRoomsMap = dbDeptRoomsMap;
   } else {
-    // 退回到从检查记录中提取（兼容旧数据）
-    deptRoomsMap = new Map();
+    const deptRoomsSetMap = new Map();
     groupedMap.forEach((record, key) => {
-      // key 格式现在是 "部门-房间"
       const parts = String(key).split('-');
       const deptName = parts[0];
       const room = parts.slice(1).join('-');
-      
-      if (!deptRoomsMap.has(deptName)) {
-        deptRoomsMap.set(deptName, []);
+
+      if (!deptRoomsSetMap.has(deptName)) {
+        deptRoomsSetMap.set(deptName, new Set());
       }
-      if (!deptRoomsMap.get(deptName).includes(room)) {
-        deptRoomsMap.get(deptName).push(room);
-      }
+      deptRoomsSetMap.get(deptName).add(room);
+    });
+    deptRoomsMap = new Map();
+    deptRoomsSetMap.forEach((roomsSet, deptName) => {
+      deptRoomsMap.set(deptName, Array.from(roomsSet));
     });
   }
   
@@ -348,9 +368,6 @@ async function generateExcelBuffer(inspections, departments, month, selectedDate
   worksheet.getColumn(10).width = 10; // 总评分 J列
 
   // 冻结窗格：冻结前5行与前2列
-  // worksheet.views = [
-  //   { state: 'frozen', xSplit: 2, ySplit: 5 }
-  // ];
 
   // ==================== 添加红黑榜工作表 ====================
   const rankSheet = workbook.addWorksheet('红黑榜排名');

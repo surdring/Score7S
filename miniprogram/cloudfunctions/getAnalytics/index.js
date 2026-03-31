@@ -28,6 +28,19 @@ function makeRequestId() {
 exports.main = async (event, context) => {
   const requestId = makeRequestId();
   try {
+    const perf = {
+      cached: false,
+      cacheGetMs: 0,
+      trendMs: 0,
+      deptMs: 0,
+      issueMs: 0,
+      currentAvgMs: 0,
+      prevAvgMs: 0,
+      unqualifiedMs: 0,
+      totalMs: 0,
+    };
+    const totalStart = Date.now();
+
     if (!SCORING_MAX_SCORES || !TOTAL_MAX_SCORE) {
       return {
         success: false,
@@ -49,7 +62,36 @@ exports.main = async (event, context) => {
     prevStartDate.setDate(prevStartDate.getDate() - dateRange);
     const prevStartDateStr = prevStartDate.toISOString().slice(0, 10);
 
+    // 缓存命中：按 dateRange + startDateStr 缓存分析结果，避免重复聚合计算
+    const CACHE_TTL_MS = 5 * 60 * 1000;
+    const cacheKey = `${String(dateRange)}_${String(startDateStr)}`;
+    try {
+      const cacheGetStart = Date.now();
+      const cacheRes = await db.collection('analytics_cache').doc(cacheKey).get();
+      perf.cacheGetMs = Date.now() - cacheGetStart;
+      const cacheData = cacheRes && cacheRes.data ? cacheRes.data : null;
+      if (cacheData && typeof cacheData.expiresAt === 'number' && cacheData.expiresAt > Date.now()) {
+        perf.cached = true;
+        perf.totalMs = Date.now() - totalStart;
+        return {
+          success: true,
+          requestId,
+          cached: true,
+          perf,
+          trendData: Array.isArray(cacheData.trendData) ? cacheData.trendData : [],
+          deptData: Array.isArray(cacheData.deptData) ? cacheData.deptData : [],
+          issueData: Array.isArray(cacheData.issueData) ? cacheData.issueData : [],
+          healthOverview: cacheData.healthOverview || { overallAverage: 0, weekOverWeekChange: 0 },
+          paretoData: Array.isArray(cacheData.paretoData) ? cacheData.paretoData : [],
+          unqualifiedOffices: Array.isArray(cacheData.unqualifiedOffices) ? cacheData.unqualifiedOffices : [],
+        };
+      }
+    } catch (e) {
+      // 缓存读取失败不阻断主流程
+    }
+
     // ========== 1. 趋势数据：按日期分组 ==========
+    const trendStart = Date.now();
     const trendPipeline = await db.collection('inspections')
       .aggregate()
       .match({
@@ -65,6 +107,7 @@ exports.main = async (event, context) => {
       })
       .limit(30)
       .end();
+    perf.trendMs = Date.now() - trendStart;
 
     const trendData = trendPipeline.list
       .map(item => ({
@@ -74,6 +117,7 @@ exports.main = async (event, context) => {
       .slice(-10); // 最近10天
 
     // ========== 2. 部门数据：按部门分组（含检查频次）==========
+    const deptStart = Date.now();
     const deptPipeline = await db.collection('inspections')
       .aggregate()
       .match({
@@ -88,6 +132,7 @@ exports.main = async (event, context) => {
         averageScore: -1
       })
       .end();
+    perf.deptMs = Date.now() - deptStart;
 
     const deptData = deptPipeline.list.map(item => ({
       department: item._id,
@@ -99,6 +144,7 @@ exports.main = async (event, context) => {
     // ~~已删除：办公室表现分布图功能已移除~~
 
     // ========== 3. 问题项数据：按评分项分组 ==========
+    const issueStart = Date.now();
     const issuePipeline = await db.collection('inspections')
       .aggregate()
       .match({
@@ -116,6 +162,7 @@ exports.main = async (event, context) => {
         averageScore: 1
       })
       .end();
+    perf.issueMs = Date.now() - issueStart;
 
     const issueData = issuePipeline.list.map(item => ({
       item: item._id,
@@ -123,30 +170,43 @@ exports.main = async (event, context) => {
     }));
 
     // ========== 4. 全局健康概览 ==========
-    // 获取本周期所有记录
-    const currentPeriodRes = await db.collection('inspections')
-      .where({
+    // 使用聚合计算平均分，避免全量拉取记录
+    const currentAvgStart = Date.now();
+    const currentAvgAgg = await db.collection('inspections')
+      .aggregate()
+      .match({
         date: _.gte(startDateStr)
       })
-      .get();
+      .group({
+        _id: null,
+        averageScore: $.avg('$totalScore'),
+        count: $.sum(1)
+      })
+      .end();
+    perf.currentAvgMs = Date.now() - currentAvgStart;
 
-    const currentRecords = currentPeriodRes.data;
-    
-    // 计算本周期综合平均分
-    const overallAverage = currentRecords.length > 0
-      ? Math.round(currentRecords.reduce((sum, r) => sum + r.totalScore, 0) / currentRecords.length * 10) / 10
+    const currentAvgItem = (currentAvgAgg.list && currentAvgAgg.list[0]) ? currentAvgAgg.list[0] : null;
+    const overallAverage = currentAvgItem && typeof currentAvgItem.averageScore === 'number'
+      ? Math.round(currentAvgItem.averageScore * 10) / 10
       : 0;
 
-    // 计算环比涨跌幅
-    const prevPeriodRes = await db.collection('inspections')
-      .where({
+    const prevAvgStart = Date.now();
+    const prevAvgAgg = await db.collection('inspections')
+      .aggregate()
+      .match({
         date: _.and(_.gte(prevStartDateStr), _.lt(startDateStr))
       })
-      .get();
+      .group({
+        _id: null,
+        averageScore: $.avg('$totalScore'),
+        count: $.sum(1)
+      })
+      .end();
+    perf.prevAvgMs = Date.now() - prevAvgStart;
 
-    const prevRecords = prevPeriodRes.data;
-    const prevAverage = prevRecords.length > 0
-      ? prevRecords.reduce((sum, r) => sum + r.totalScore, 0) / prevRecords.length
+    const prevAvgItem = (prevAvgAgg.list && prevAvgAgg.list[0]) ? prevAvgAgg.list[0] : null;
+    const prevAverage = prevAvgItem && typeof prevAvgItem.averageScore === 'number'
+      ? prevAvgItem.averageScore
       : 0;
 
     const weekOverWeekChange = prevAverage > 0
@@ -188,29 +248,72 @@ exports.main = async (event, context) => {
     // ~~已删除：办公室表现分布图功能已移除~~
 
     // ========== 8. 异常穿透：未达标办公室列表 ==========
-    const unqualifiedOffices = currentRecords
-      .filter(r => r.totalScore < PASS_THRESHOLD)
-      .map(r => ({
-        department: r.department,
-        room: r.room,
-        totalScore: r.totalScore,
-        date: r.date
-      }))
-      .sort((a, b) => a.totalScore - b.totalScore);
+    // 未达标办公室列表：数据库侧过滤 + 排序 + 限制数量，避免全量拉取
+    const UNQUALIFIED_LIMIT = 50;
+    const unqualifiedStart = Date.now();
+    const unqualifiedAgg = await db.collection('inspections')
+      .aggregate()
+      .match({
+        date: _.gte(startDateStr),
+        totalScore: _.lt(PASS_THRESHOLD)
+      })
+      .sort({
+        totalScore: 1
+      })
+      .limit(UNQUALIFIED_LIMIT)
+      .project({
+        department: 1,
+        room: 1,
+        totalScore: 1,
+        date: 1
+      })
+      .end();
+    perf.unqualifiedMs = Date.now() - unqualifiedStart;
+
+    const unqualifiedOffices = (unqualifiedAgg.list || []).map(r => ({
+      department: r.department,
+      room: r.room,
+      totalScore: r.totalScore,
+      date: r.date
+    }));
+
+    const paretoData = fullParetoData.map(d => ({
+      ...d,
+      deductionPercent: totalDeduction > 0 ? Math.round(d.deductionTotal / totalDeduction * 1000) / 10 : 0
+    }));
+
+    // 写入缓存（失败不阻断返回）
+    try {
+      await db.collection('analytics_cache').doc(cacheKey).set({
+        data: {
+          trendData,
+          deptData,
+          issueData,
+          healthOverview,
+          paretoData,
+          unqualifiedOffices,
+          expiresAt: Date.now() + CACHE_TTL_MS,
+          updatedAt: db.serverDate()
+        }
+      });
+    } catch (e) {
+      // ignore
+    }
+
+    perf.totalMs = Date.now() - totalStart;
+    console.log('[getAnalytics][perf]', { requestId, cacheKey, ...perf });
 
     return {
       success: true,
       requestId,
+      perf,
       // 原有数据（兼容）
       trendData,
       deptData,
       issueData,
       // 新增数据
       healthOverview,
-      paretoData: fullParetoData.map(d => ({
-        ...d,
-        deductionPercent: totalDeduction > 0 ? Math.round(d.deductionTotal / totalDeduction * 1000) / 10 : 0
-      })),
+      paretoData,
       // ~~roomDistribution 已删除~~
       unqualifiedOffices
     };

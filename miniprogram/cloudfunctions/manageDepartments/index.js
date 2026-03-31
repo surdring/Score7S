@@ -77,6 +77,13 @@ function parseCsv(content) {
   return rows;
 }
 
+async function runBatched(tasks, batchSize) {
+  for (let i = 0; i < tasks.length; i += batchSize) {
+    const chunk = tasks.slice(i, i + batchSize);
+    await Promise.all(chunk.map((fn) => fn()));
+  }
+}
+
 async function batchUpsertDepartments(departments) {
   if (!departments || departments.length === 0) return { inserted: 0, updated: 0 };
 
@@ -219,10 +226,10 @@ exports.main = async (event, context) => {
     if (action === 'delete' && departmentId) {
       // 同时删除该部门下的所有办公室
       const roomsRes = await db.collection('rooms').where({ departmentId }).get();
-      const deleteRoomPromises = roomsRes.data.map(item => 
-        db.collection('rooms').doc(item._id).remove()
-      );
-      await Promise.all(deleteRoomPromises);
+      const deleteRoomTasks = (roomsRes.data || []).map(item => (
+        () => db.collection('rooms').doc(item._id).remove()
+      ));
+      await runBatched(deleteRoomTasks, 20);
       
       // 删除部门
       await db.collection('departments').doc(departmentId).remove();
@@ -310,10 +317,10 @@ exports.main = async (event, context) => {
     if (action === 'clear') {
       // 清空部门数据（谨慎使用）
       const res = await db.collection('departments').get();
-      const deletePromises = res.data.map(item => 
-        db.collection('departments').doc(item._id).remove()
-      );
-      await Promise.all(deletePromises);
+      const deleteTasks = (res.data || []).map(item => (
+        () => db.collection('departments').doc(item._id).remove()
+      ));
+      await runBatched(deleteTasks, 20);
 
       return {
         success: true,

@@ -75,6 +75,24 @@ exports.main = async (event, context) => {
       data: inspectionData
     });
 
+    // 提交成功后失效缓存（失败不阻断主流程）
+    try {
+      await db.collection('leaderboard_cache').doc(String(date)).remove();
+    } catch (e) {
+      // ignore
+    }
+    try {
+      const cacheRes = await db.collection('analytics_cache').field({ _id: true }).limit(1000).get();
+      const ids = (cacheRes.data || []).map(d => d._id).filter(Boolean);
+      if (ids.length > 0) {
+        await db.collection('analytics_cache').where({
+          _id: db.command.in(ids)
+        }).remove();
+      }
+    } catch (e) {
+      // ignore
+    }
+
     return {
       success: true,
       _id: addRes._id,

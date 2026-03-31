@@ -150,9 +150,10 @@ exports.main = async (event, context) => {
     if (action === 'listAll') {
       const roomsRes = await db.collection('rooms')
         .orderBy('order', 'asc')
+        .field({ departmentId: true, name: true, manager: true, order: true, createdAt: true, updatedAt: true })
         .get();
       
-      const deptsRes = await db.collection('departments').get();
+      const deptsRes = await db.collection('departments').field({ name: true, order: true }).get();
       const deptMap = new Map(deptsRes.data.map(d => [d._id, d.name]));
       
       const roomsWithDept = roomsRes.data.map(r => ({
@@ -170,15 +171,31 @@ exports.main = async (event, context) => {
     if (action === 'batchImport' && event.rooms && Array.isArray(event.rooms)) {
       let inserted = 0;
       let updated = 0;
+      let failed = 0;
       const failures = [];
       
-      // 先批量查询已存在的办公室
-      const allRooms = await db.collection('rooms').get();
+      // 批量查询已存在的办公室（分批加载避免内存溢出）
       const existMap = new Map();
-      allRooms.data.forEach(r => {
-        const key = `${r.departmentId}|${r.name}`;
-        existMap.set(key, r);
-      });
+      const batchQuerySize = 500;
+      let offset = 0;
+      let hasMore = true;
+      
+      while (hasMore) {
+        const batchRes = await db.collection('rooms')
+          .skip(offset)
+          .limit(batchQuerySize)
+          .field({ _id: true, departmentId: true, name: true })
+          .get();
+        
+        const batch = batchRes.data || [];
+        batch.forEach(r => {
+          const key = `${r.departmentId}|${r.name}`;
+          existMap.set(key, r);
+        });
+        
+        offset += batch.length;
+        hasMore = batch.length === batchQuerySize;
+      }
       
       // 分批并行写入（每批20个）
       const chunkSize = 20;
@@ -206,12 +223,15 @@ exports.main = async (event, context) => {
                   updatedAt: db.serverDate(),
                 }
               }).then(() => { updated++; }).catch((e) => {
-                failures.push({
-                  departmentId: deptId,
-                  name: normalizedName,
-                  op: 'update',
-                  message: e && e.message ? e.message : '更新失败'
-                });
+                failed++;
+                if (failures.length < 20) {
+                  failures.push({
+                    departmentId: deptId,
+                    name: normalizedName,
+                    op: 'update',
+                    message: e && e.message ? e.message : '更新失败'
+                  });
+                }
                 console.error('批量导入办公室-更新失败', {
                   departmentId: deptId,
                   name: normalizedName,
@@ -233,12 +253,15 @@ exports.main = async (event, context) => {
                   updatedAt: db.serverDate(),
                 }
               }).then(() => { inserted++; }).catch((e) => {
-                failures.push({
-                  departmentId: deptId,
-                  name: normalizedName,
-                  op: 'insert',
-                  message: e && e.message ? e.message : '新增失败'
-                });
+                failed++;
+                if (failures.length < 20) {
+                  failures.push({
+                    departmentId: deptId,
+                    name: normalizedName,
+                    op: 'insert',
+                    message: e && e.message ? e.message : '新增失败'
+                  });
+                }
                 console.error('批量导入办公室-新增失败', {
                   departmentId: deptId,
                   name: normalizedName,
@@ -256,8 +279,8 @@ exports.main = async (event, context) => {
         success: true,
         inserted,
         updated,
-        failed: failures.length,
-        failures: failures.slice(0, 20)
+        failed,
+        failures
       };
     }
 

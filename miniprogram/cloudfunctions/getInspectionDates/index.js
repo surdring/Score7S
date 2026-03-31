@@ -30,8 +30,7 @@ exports.main = async (event, context) => {
     // 提取日期列表
     const dates = res.list
       .map(item => item.date)
-      .filter(d => d)
-      .sort((a, b) => b.localeCompare(a)); // 降序排列
+      .filter(d => d);
 
     return {
       success: true,
