@@ -880,6 +880,29 @@ button.submit-btn[disabled] {
   color: #6B7280;
 }
 
+/* 进度提示 */
+.progress-hint {
+  margin-bottom: 40rpx;
+  padding: 20rpx 32rpx;
+  background-color: #F8FAFC;
+  border-radius: 16rpx;
+  border-left: 4rpx solid #3B82F6;
+}
+
+.progress-text {
+  display: block;
+  font-size: 28rpx;
+  color: #374151;
+  font-weight: 500;
+  margin-bottom: 8rpx;
+}
+
+.progress-sub {
+  display: block;
+  font-size: 24rpx;
+  color: #9CA3AF;
+}
+
 .success-actions {
   display: flex;
   flex-direction: column;

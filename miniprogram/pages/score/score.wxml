@@ -217,9 +217,12 @@
     <text class="success-title">提交成功</text>
     <text class="success-info">{{submittedData.department}} - {{submittedData.room}}</text>
     <view class="success-score">
-      <text class="score-label">总分:</text>
+      <text class="score-label">得分:</text>
       <text class="score-value">{{submittedData.totalScore}}</text>
-      <text class="score-unit">分</text>
+    </view>
+
+    <view class="progress-hint">
+      <text class="progress-text">今日检查进度 {{submittedData.scoredCount}}/{{submittedData.totalOffices}}</text>
     </view>
 
     <view class="success-actions">

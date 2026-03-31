@@ -44,6 +44,8 @@ interface SubmittedInspectionData {
   room: string;
   totalScore: number;
   details: Array<{ item: string; score: number; images: string[]; remark: string }>;
+  scoredCount?: number;
+  totalOffices?: number;
 }
 
 interface RoomRecord {
@@ -663,9 +665,14 @@ Page({
 
       // 记录为已评分（用于同部门自动切换与重复提交提醒）
       const newKey = this.makeScoredOfficeKey(this.data.selectedDept, this.data.selectedRoom);
+      const updatedScoredKeys = Array.from(new Set([...this.data.scoredOfficeKeys, newKey]));
       this.setData({
-        scoredOfficeKeys: Array.from(new Set([...this.data.scoredOfficeKeys, newKey])),
+        scoredOfficeKeys: updatedScoredKeys,
       });
+
+      // 计算办公室统计（使用更新后的已评分列表）
+      const totalOffices = this.data.departments.reduce((sum, dept) => sum + (dept.rooms?.length || 0), 0);
+      const scoredCount = updatedScoredKeys.length;
 
       // 提交成功
       this.setData({
@@ -679,6 +686,8 @@ Page({
           room: this.data.selectedRoom,
           totalScore: this.calculateTotal(),
           details,
+          scoredCount,
+          totalOffices,
         },
         submitting: false,
       });
