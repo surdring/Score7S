@@ -36,10 +36,9 @@
       <text class="section-subtitle">优秀办公室</text>
     </view>
 
-    <view wx:if="{{redList.length === 0}}" class="empty-card">
-      <text class="empty-icon">✨</text>
+    <view wx:if="{{redList.length === 0}}" class="empty-card empty-honor">
+      <view class="empty-icon-line icon-honor"></view>
       <text class="empty-text">暂无红榜数据</text>
-      <text class="empty-hint">本期还没有产生高分办公室</text>
     </view>
 
     <view wx:else class="rank-list">
@@ -72,10 +71,9 @@
       <text class="section-subtitle">待改进</text>
     </view>
 
-    <view wx:if="{{blackList.length === 0}}" class="empty-card">
-      <text class="empty-icon">🎉</text>
+    <view wx:if="{{blackList.length === 0}}" class="empty-card empty-safe">
+      <view class="empty-icon-line icon-shield"></view>
       <text class="empty-text">暂无黑榜数据</text>
-      <text class="empty-hint">大家表现都很棒，继续保持！</text>
     </view>
 
     <view wx:else class="rank-list">
@@ -133,42 +131,12 @@
         <text>；</text>
         <text class="office-highlight" bindtap="viewBlackFirst">{{insightData.blackOfficeNames}}</text>
         <block wx:if="{{insightData.blackOfficeCount > 1}}">
-          <text>本期并列榜尾（{{insightData.blackScore}}分），需要重点关注，建议督导干预</text>
+          <text>本期并列榜尾（{{insightData.blackScore}}分），需要重点关注。</text>
         </block>
         <block wx:else>
-          <text>本期位列榜尾（{{insightData.blackScore}}分），需要重点关注，建议督导干预</text>
+          <text>本期位列榜尾（{{insightData.blackScore}}分），需要重点关注。</text>
         </block>
       </block>
-    </view>
-  </view>
-</view>
-
-<!-- 密码弹窗 -->
-<view 
-  wx:if="{{showPasswordModal}}" 
-  class="modal-mask" 
-  catchtouchmove="preventTouchMove"
->
-  <view class="password-modal">
-    <view class="password-modal-header">
-      <text class="password-modal-title">管理入口验证</text>
-      <view class="modal-close" bindtap="cancelPasswordModal">✕</view>
-    </view>
-    <view class="password-modal-body">
-      <text class="password-hint">请输入管理密码</text>
-      <input 
-        class="password-input"
-        type="password"
-        placeholder="请输入密码"
-        value="{{passwordInput}}"
-        bindinput="onPasswordInput"
-        focus="{{passwordInputFocus}}"
-        adjust-position="{{false}}"
-      />
-    </view>
-    <view class="password-modal-footer">
-      <button class="btn-cancel" bindtap="cancelPasswordModal">取消</button>
-      <button class="btn-confirm" bindtap="confirmPassword" loading="{{passwordVerifying}}">确认</button>
     </view>
   </view>
 </view>

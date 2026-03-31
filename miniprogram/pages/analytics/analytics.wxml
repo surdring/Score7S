@@ -7,9 +7,8 @@
 
   <!-- 无数据 -->
   <view wx:elif="{{!hasData}}" class="empty-state">
-    <text class="empty-icon">📊</text>
+    <view class="empty-icon-line icon-data-folder"></view>
     <text class="empty-text">暂无足够的数据生成图表</text>
-    <text class="empty-hint">请先完成一些评分记录</text>
   </view>
 
   <!-- 有数据 -->

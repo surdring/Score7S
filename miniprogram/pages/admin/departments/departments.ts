@@ -297,6 +297,49 @@ Page({
     });
   },
 
+  // 清空评分数据（仅删除inspections集合，保留部门和办公室）
+  async clearInspectionsOnly() {
+    wx.showModal({
+      title: '⚠️ 确认清空',
+      content: '将删除所有评分记录（inspections），部门和办公室数据将保留。此操作不可恢复！',
+      confirmColor: '#ff9800',
+      success: async (res) => {
+        if (res.confirm) {
+          wx.showLoading({ title: '正在清空...', mask: true });
+          try {
+            const result = await wx.cloud.callFunction({
+              name: 'clearAllData',
+              data: { type: 'inspections' }
+            });
+
+            const callResult = result.result as unknown as {
+              success?: boolean;
+              message?: string;
+              data?: { inspections?: number };
+            };
+
+            wx.hideLoading();
+
+            if (callResult?.success && callResult.data) {
+              const inspections = callResult.data.inspections || 0;
+              wx.showModal({
+                title: '清空完成',
+                content: `已删除 ${inspections} 条评分记录`,
+                showCancel: false
+              });
+            } else {
+              throw new Error(callResult?.message || '清空失败');
+            }
+          } catch (err: unknown) {
+            wx.hideLoading();
+            const message = err && (err as { message?: string }).message ? (err as { message?: string }).message! : '清空失败';
+            wx.showToast({ title: message, icon: 'error' });
+          }
+        }
+      }
+    });
+  },
+
   // 清理云端所有数据
   async clearAllCloudData() {
     wx.showModal({

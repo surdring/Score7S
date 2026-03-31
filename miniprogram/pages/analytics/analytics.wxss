@@ -795,18 +795,56 @@
   text-align: center;
 }
 
-.empty-icon {
-  font-size: 80rpx;
-  margin-bottom: 24rpx;
+/* 线性图标容器 */
+.empty-icon-line {
+  width: 120rpx;
+  height: 120rpx;
+  margin-bottom: 32rpx;
+  position: relative;
 }
 
+/* 数据文件夹图标 - 淡蓝色线性风格 */
+.icon-data-folder {
+  border: 3rpx solid #93C5FD;
+  border-radius: 12rpx;
+  position: relative;
+  width: 96rpx;
+  height: 80rpx;
+  margin: 20rpx auto;
+}
+
+.icon-data-folder::before {
+  content: '';
+  position: absolute;
+  width: 40rpx;
+  height: 20rpx;
+  border: 3rpx solid #93C5FD;
+  border-bottom: none;
+  border-radius: 8rpx 8rpx 0 0;
+  top: -20rpx;
+  left: 16rpx;
+}
+
+.icon-data-folder::after {
+  content: '';
+  position: absolute;
+  width: 48rpx;
+  height: 0;
+  border-top: 2rpx dashed #BFDBFE;
+  bottom: 24rpx;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+/* 空状态文案 - 统一莫兰迪灰 */
 .empty-text {
-  font-size: 32rpx;
-  color: #374151;
+  font-size: 28rpx;
+  color: #9CA3AF;
   margin-bottom: 12rpx;
+  font-weight: 400;
 }
 
 .empty-hint {
-  font-size: 26rpx;
-  color: #9CA3AF;
+  font-size: 24rpx;
+  color: #D1D5DB;
 }

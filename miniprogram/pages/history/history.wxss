@@ -164,6 +164,20 @@
   white-space: nowrap;
 }
 
+.admin-btn-light {
+  display: flex;
+  align-items: center;
+  gap: 8rpx;
+  padding: 14rpx 18rpx;
+  font-size: 26rpx;
+  color: #FFFFFF;
+  font-weight: 500;
+  white-space: nowrap;
+  background-color: rgba(255, 255, 255, 0.15);
+  border-radius: 40rpx;
+  border: 1rpx solid rgba(255, 255, 255, 0.2);
+}
+
 .export-btn-light.disabled {
   opacity: 0.5;
 }
@@ -198,6 +212,38 @@
   bottom: 2rpx;
   left: 50%;
   transform: translateX(-50%);
+}
+
+.admin-icon {
+  width: 18rpx;
+  height: 18rpx;
+  position: relative;
+  flex-shrink: 0;
+}
+
+.admin-icon::before {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 2rpx;
+  transform: translateX(-50%);
+  width: 10rpx;
+  height: 10rpx;
+  border: 2rpx solid #FFFFFF;
+  border-radius: 50%;
+}
+
+.admin-icon::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  bottom: 2rpx;
+  transform: translateX(-50%);
+  width: 14rpx;
+  height: 6rpx;
+  border: 2rpx solid #FFFFFF;
+  border-top: none;
+  border-radius: 0 0 8rpx 8rpx;
 }
 
 /* 隐藏旧筛选区域 */
@@ -340,6 +386,95 @@
   display: flex;
   flex-direction: column;
   z-index: 1001;
+}
+
+.password-modal {
+  position: fixed;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: 600rpx;
+  background-color: #FFFFFF;
+  border-radius: 24rpx;
+  overflow: hidden;
+  z-index: 1001;
+  box-shadow: 0 8rpx 32rpx rgba(0, 0, 0, 0.2);
+}
+
+.password-modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 32rpx;
+  background-color: #F9FAFB;
+  border-bottom: 2rpx solid #E5E7EB;
+}
+
+.password-modal-title {
+  font-size: 32rpx;
+  font-weight: 600;
+  color: #111827;
+}
+
+.password-modal-body {
+  padding: 40rpx 32rpx;
+}
+
+.password-hint {
+  display: block;
+  font-size: 28rpx;
+  color: #6B7280;
+  margin-bottom: 24rpx;
+}
+
+.password-input {
+  width: 100%;
+  height: 88rpx;
+  padding: 0 24rpx;
+  font-size: 32rpx;
+  border: 2rpx solid #E5E7EB;
+  border-radius: 16rpx;
+  box-sizing: border-box;
+}
+
+.password-input:focus {
+  border-color: #3B82F6;
+}
+
+.password-modal-footer {
+  display: flex;
+  gap: 24rpx;
+  padding: 24rpx 32rpx 32rpx;
+}
+
+.btn-cancel {
+  flex: 1;
+  height: 80rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 28rpx;
+  color: #6B7280;
+  background-color: #F3F4F6;
+  border: none;
+  border-radius: 16rpx;
+}
+
+.btn-confirm {
+  flex: 1;
+  height: 80rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 28rpx;
+  color: #FFFFFF;
+  background-color: #3B82F6;
+  border: none;
+  border-radius: 16rpx;
+}
+
+.btn-confirm[loading] {
+  opacity: 0.7;
 }
 
 .modal-header {

@@ -197,33 +197,97 @@
   font-weight: 400;
 }
 
-/* 空状态卡片 */
+/* 空状态卡片 - 极简线性风格 */
 .empty-card {
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: 64rpx 32rpx;
-  background-color: #FFFFFF;
-  border: 4rpx dashed #E5E7EB;
+  padding: 80rpx 32rpx;
+  background-color: #F9FAFB;
   border-radius: 24rpx;
   text-align: center;
 }
 
-.empty-card .empty-icon {
-  font-size: 64rpx;
-  margin-bottom: 24rpx;
+/* 线性图标容器 */
+.empty-icon-line {
+  width: 120rpx;
+  height: 120rpx;
+  margin-bottom: 32rpx;
+  position: relative;
 }
 
+/* 空心勋章图标 - 红榜空状态（淡珊瑚色） */
+.icon-honor {
+  border: 3rpx solid #FDA4AF;
+  border-radius: 50%;
+  position: relative;
+}
+
+.icon-honor::before {
+  content: '';
+  position: absolute;
+  width: 40rpx;
+  height: 24rpx;
+  border-left: 3rpx solid #FDA4AF;
+  border-bottom: 3rpx solid #FDA4AF;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -60%) rotate(-45deg);
+}
+
+.icon-honor::after {
+  content: '';
+  position: absolute;
+  width: 24rpx;
+  height: 24rpx;
+  border: 3rpx solid #FDA4AF;
+  border-radius: 50%;
+  top: -16rpx;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #F9FAFB;
+}
+
+/* 带勾盾牌图标 - 黑榜空状态（炭灰色） */
+.icon-shield {
+  border: 3rpx solid #6B7280;
+  border-radius: 50% 50% 40% 40%;
+  position: relative;
+}
+
+.icon-shield::before {
+  content: '';
+  position: absolute;
+  width: 36rpx;
+  height: 20rpx;
+  border-left: 3rpx solid #6B7280;
+  border-bottom: 3rpx solid #6B7280;
+  top: 45%;
+  left: 50%;
+  transform: translate(-50%, -50%) rotate(-45deg);
+}
+
+/* 红榜空状态 - 淡珊瑚背景 */
+.empty-honor {
+  background: linear-gradient(135deg, #FEF2F2 0%, #F9FAFB 100%);
+}
+
+/* 黑榜空状态 - 淡炭灰背景 */
+.empty-safe {
+  background: linear-gradient(135deg, #F3F4F6 0%, #F9FAFB 100%);
+}
+
+/* 空状态文案 - 统一莫兰迪灰 */
 .empty-card .empty-text {
-  font-size: 32rpx;
-  color: #374151;
-  font-weight: 500;
+  font-size: 28rpx;
+  color: #9CA3AF;
+  font-weight: 400;
   margin-bottom: 12rpx;
 }
 
 .empty-card .empty-hint {
-  font-size: 26rpx;
-  color: #9CA3AF;
+  font-size: 24rpx;
+  color: #D1D5DB;
 }
 
 /* ========== 3. 红黑榜卡片：办公室粒度 + 背景数字 ========== */
@@ -696,94 +760,4 @@
 .empty-status-icon {
   font-size: 80rpx;
   margin-bottom: 24rpx;
-}
-
-/* 密码弹窗样式 */
-.password-modal {
-  position: fixed;
-  left: 50%;
-  top: 50%;
-  transform: translate(-50%, -50%);
-  width: 600rpx;
-  background-color: #FFFFFF;
-  border-radius: 24rpx;
-  overflow: hidden;
-  z-index: 1001;
-  box-shadow: 0 8rpx 32rpx rgba(0, 0, 0, 0.2);
-}
-
-.password-modal-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 32rpx;
-  background-color: #F9FAFB;
-  border-bottom: 2rpx solid #E5E7EB;
-}
-
-.password-modal-title {
-  font-size: 32rpx;
-  font-weight: 600;
-  color: #111827;
-}
-
-.password-modal-body {
-  padding: 40rpx 32rpx;
-}
-
-.password-hint {
-  display: block;
-  font-size: 28rpx;
-  color: #6B7280;
-  margin-bottom: 24rpx;
-}
-
-.password-input {
-  width: 100%;
-  height: 88rpx;
-  padding: 0 24rpx;
-  font-size: 32rpx;
-  border: 2rpx solid #E5E7EB;
-  border-radius: 16rpx;
-  box-sizing: border-box;
-}
-
-.password-input:focus {
-  border-color: #3B82F6;
-}
-
-.password-modal-footer {
-  display: flex;
-  gap: 24rpx;
-  padding: 24rpx 32rpx 32rpx;
-}
-
-.btn-cancel {
-  flex: 1;
-  height: 80rpx;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 28rpx;
-  color: #6B7280;
-  background-color: #F3F4F6;
-  border: none;
-  border-radius: 16rpx;
-}
-
-.btn-confirm {
-  flex: 1;
-  height: 80rpx;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 28rpx;
-  color: #FFFFFF;
-  background-color: #3B82F6;
-  border: none;
-  border-radius: 16rpx;
-}
-
-.btn-confirm[loading] {
-  opacity: 0.7;
 }

@@ -1,0 +1,13 @@
+{
+  "_id": "admin",
+  "adminPassword": "7S123456",
+  "adminOpenIds": [
+    "oat9y1yDvzADgl4VMj018TMb4Um4"
+  ],
+  "createTime": {
+    "$date": "2025-03-31T00:00:00.000Z"
+  },
+  "updateTime": {
+    "$date": "2025-03-31T00:00:00.000Z"
+  }
+}

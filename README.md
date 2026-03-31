@@ -76,7 +76,9 @@
 
 - **部门管理**：添加、编辑、删除部门信息
 - **办公室管理**：管理各部门下属办公室
-- **数据清空**：管理员密码验证后可清空测试数据
+- **清空评分数据**：仅删除历史评分记录，保留部门/办公室结构
+- **清理全部数据**：清空所有业务数据（部门、办公室、评分记录）
+- **管理入口**：位于"历史"页面顶部，需管理员密码验证
 
 ---
 
@@ -197,13 +199,20 @@ Score7S/
 5. **配置云开发环境**
    - 在微信开发者工具中点击"云开发"
    - 创建或选择云开发环境
-   - 记录环境 ID，更新到 `app.ts` 中
+   - 记录环境 ID，更新到 `app.ts` 中（已默认配置 `cloudbase-2g1teb5c0c67c6d5`）
 
-6. **部署云函数**
+6. **配置管理员权限**
+   - 在云开发控制台 → 数据库 → 创建 `config` 集合
+   - 导入 `scripts/admin-config.json` 文件，包含：
+     - 默认管理员密码：`7S123456`
+     - 管理员 OpenID 白名单（需替换为您自己的 OpenID）
+   - 获取 OpenID 方法：进入小程序"历史"页 → 点击"管理" → 查看控制台输出
+
+7. **部署云函数**
    - 右键各云函数目录
    - 选择"上传并部署：云端安装依赖"
 
-7. **初始化数据库**
+8. **初始化数据库**
    - 在云开发控制台创建以下集合：
      - `inspections` - 检查记录
      - `departments` - 部门信息
@@ -262,18 +271,30 @@ wx.cloud.init({
 });
 ```
 
-### 管理员密码
+### 管理员配置
 
-默认管理员密码：`7S123456`
-
-可在云数据库 `config` 集合中修改：
+管理员配置存储在云数据库 `config` 集合的 `admin` 文档中：
 
 ```json
 {
   "_id": "admin",
-  "adminPasswordHash": "sha256哈希值"
+  "adminPassword": "7S123456",
+  "adminOpenIds": ["your-openid-here"],
+  "createTime": { "$date": "2025-03-31T00:00:00.000Z" },
+  "updateTime": { "$date": "2025-03-31T00:00:00.000Z" }
 }
 ```
+
+| 字段 | 说明 |
+|------|------|
+| `adminPassword` | 管理员登录密码（明文或哈希） |
+| `adminOpenIds` | 管理员 OpenID 白名单数组 |
+
+**获取 OpenID：**
+1. 进入小程序"历史"页面
+2. 点击顶部"管理"按钮
+3. 在开发者工具控制台查看输出的 OpenID
+4. 将其添加到 `adminOpenIds` 数组中
 
 ---
 
@@ -304,7 +325,7 @@ node scripts/sync-shared.js
 | `manageDepartments` | 部门管理（需权限） | action, data |
 | `manageRooms` | 办公室管理（需权限） | action, data |
 | `verifyAdminPassword` | 验证管理员密码 | password |
-| `clearAllData` | 清空所有数据（需权限） | type |
+| `clearAllData` | 清空数据（需权限） | `type`: 'all' \| 'inspections' \| 'departments' \| 'rooms' |
 
 ---
 
@@ -348,7 +369,7 @@ node scripts/sync-shared.js
 | _id | string | 配置项ID (admin) |
 | adminPassword | string | 管理员密码（明文，不推荐） |
 | adminPasswordHash | string | 管理员密码哈希（推荐） |
-| adminOpenIds | array | 管理员 OpenID 列表 |
+| adminOpenIds | array | 管理员 OpenID 白名单列表 |
 
 ---
 
@@ -384,6 +405,17 @@ chore: 构建/工具相关
 ---
 
 ## 更新日志
+
+### v1.3.0 (2026-03-31)
+
+**功能调整**
+- 管理入口从首页迁移至"历史"页面顶部，更符合使用场景
+- 部门管理页面新增"清空评分数据"按钮（橙色），可单独清理历史评分记录而保留部门架构
+
+**配置完善**
+- `app.ts` 默认配置云开发环境 ID `cloudbase-2g1teb5c0c67c6d5`
+- 新增 `scripts/admin-config.json` 模板，简化管理员权限初始化流程
+- 新增 `cloudfunctions/getOpenId` 云函数，便于获取用户 OpenID
 
 ### v1.2.0 (2026-03-29)
 

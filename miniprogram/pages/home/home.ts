@@ -73,11 +73,6 @@ Page({
     selectedDate: '' as string,
     availableDates: [] as string[],
     latestDate: '' as string,
-    // 密码弹窗相关
-    showPasswordModal: false,
-    passwordInput: '' as string,
-    passwordInputFocus: false,
-    passwordVerifying: false,
     // 今日管理速报（办公室粒度）
     insightData: {
       perfectCount: 0,
@@ -255,77 +250,6 @@ Page({
     this.loadRankings(date);
   },
 
-  // 点击管理入口
-  async goToAdmin() {
-    const app = getApp() as IAppOption;
-
-    // 已验证过，直接进入
-    if (app.globalData.adminAuthed) {
-      wx.navigateTo({ url: '/pages/admin/departments/departments' });
-      return;
-    }
-
-    // 显示密码弹窗（延迟聚焦，避免渲染冲突）
-    this.setData({ showPasswordModal: true, passwordInput: '', passwordInputFocus: false });
-    setTimeout(() => {
-      this.setData({ passwordInputFocus: true });
-    }, 100);
-  },
-
-  // 阻止滚动穿透
-  preventTouchMove() {},
-
-  // 阻止事件冒泡
-  preventBubble() {},
-
-  // 拦截输入框点击事件
-  onInputTap() {},
-
-  // 密码输入
-  onPasswordInput(e: { detail: { value: string } }) {
-    this.setData({ passwordInput: e.detail.value });
-  },
-
-  // 取消密码弹窗
-  cancelPasswordModal() {
-    this.setData({ showPasswordModal: false, passwordInput: '', passwordInputFocus: false });
-  },
-
-  // 确认密码
-  async confirmPassword() {
-    const password = this.data.passwordInput.trim();
-    if (!password) {
-      wx.showToast({ title: '请输入密码', icon: 'none' });
-      return;
-    }
-
-    this.setData({ passwordVerifying: true });
-
-    try {
-      const res = await wx.cloud.callFunction({
-        name: 'verifyAdminPassword',
-        data: { password }
-      });
-
-      const result = res.result as unknown as { success?: boolean; message?: string };
-
-      if (result?.success) {
-        const app = getApp() as IAppOption;
-        app.globalData.adminAuthed = true;
-        this.setData({ showPasswordModal: false, passwordInput: '', passwordVerifying: false });
-        wx.navigateTo({ url: '/pages/admin/departments/departments' });
-      } else {
-        wx.showToast({ title: result?.message || '密码错误', icon: 'error' });
-        this.setData({ passwordVerifying: false });
-      }
-    } catch (err) {
-      console.error('验证密码失败', err);
-      wx.showToast({ title: '验证失败', icon: 'error' });
-      this.setData({ passwordVerifying: false });
-    }
-  },
-
-  // 查看黑榜扣分项详情
   viewBlackDetail(e: { currentTarget: { dataset: { id?: string } } }) {
     const { id } = e.currentTarget.dataset;
     const inspection = this.data.blackList.find((item: Inspection) => item._id === id);

@@ -35,6 +35,14 @@
   border-radius: 8rpx;
 }
 
+.btn-warning {
+  flex: 1;
+  background-color: #F59E0B;
+  color: white;
+  font-size: 28rpx;
+  border-radius: 8rpx;
+}
+
 .dept-list {
   background-color: white;
   border-radius: 12rpx;

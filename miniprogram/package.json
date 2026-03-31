@@ -7,6 +7,7 @@
     "build": "echo '请使用微信开发者工具进行构建'"
   },
   "dependencies": {
+    "@babel/runtime": "^7.23.0",
     "echarts": "^5.4.3",
     "echarts-for-weixin": "^1.0.0"
   },

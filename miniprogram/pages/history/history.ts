@@ -27,6 +27,11 @@ Page({
     // 筛选
     searchKeyword: '',
     selectedDate: '',
+    // 密码弹窗相关
+    showPasswordModal: false,
+    passwordInput: '' as string,
+    passwordInputFocus: false,
+    passwordVerifying: false,
     // 详情
     selectedInspection: null as InspectionRecord | null,
     showDetail: false,
@@ -342,6 +347,74 @@ Page({
   onReachBottom() {
     if (this.data.hasMore && !this.data.loadingMore) {
       this.loadHistory(false);
+    }
+  },
+
+  async goToAdmin() {
+    // 获取并输出 OpenID 到控制台
+    try {
+      const res = await wx.cloud.callFunction({ name: 'getOpenId' });
+      const result = res.result as { openid?: string };
+      if (result?.openid) {
+        console.log('您的 OpenID:', result.openid);
+      }
+    } catch (e) {
+      // 忽略错误
+    }
+
+    const app = getApp() as IAppOption;
+
+    if (app.globalData.adminAuthed) {
+      wx.navigateTo({ url: '/pages/admin/departments/departments' });
+      return;
+    }
+
+    this.setData({ showPasswordModal: true, passwordInput: '', passwordInputFocus: false });
+    setTimeout(() => {
+      this.setData({ passwordInputFocus: true });
+    }, 100);
+  },
+
+  preventTouchMove() {},
+
+  onPasswordInput(e: { detail: { value: string } }) {
+    this.setData({ passwordInput: e.detail.value });
+  },
+
+  cancelPasswordModal() {
+    this.setData({ showPasswordModal: false, passwordInput: '', passwordInputFocus: false });
+  },
+
+  async confirmPassword() {
+    const password = this.data.passwordInput.trim();
+    if (!password) {
+      wx.showToast({ title: '请输入密码', icon: 'none' });
+      return;
+    }
+
+    this.setData({ passwordVerifying: true });
+
+    try {
+      const res = await wx.cloud.callFunction({
+        name: 'verifyAdminPassword',
+        data: { password }
+      });
+
+      const result = res.result as unknown as { success?: boolean; message?: string };
+
+      if (result?.success) {
+        const app = getApp() as IAppOption;
+        app.globalData.adminAuthed = true;
+        this.setData({ showPasswordModal: false, passwordInput: '', passwordVerifying: false });
+        wx.navigateTo({ url: '/pages/admin/departments/departments' });
+      } else {
+        wx.showToast({ title: result?.message || '密码错误', icon: 'error' });
+        this.setData({ passwordVerifying: false });
+      }
+    } catch (err) {
+      console.error('验证密码失败', err);
+      wx.showToast({ title: '验证失败', icon: 'error' });
+      this.setData({ passwordVerifying: false });
     }
   },
 });
